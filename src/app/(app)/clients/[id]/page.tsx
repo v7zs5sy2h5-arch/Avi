@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/layout/Header";
 import { StatusBadge } from "@/components/StatusBadge";
 import { formatCurrency, formatDate, formatTime } from "@/lib/utils";
+import { getTreatmentEmoji } from "@/lib/categoryStyle";
 import type { Client } from "@/types/database";
 import { ClientInfoForm } from "./ClientInfoForm";
 
@@ -11,7 +12,7 @@ interface HistoryRow {
   id: string;
   starts_at: string;
   status: "planned" | "completed" | "cancelled" | "no_show";
-  treatment: { name: string } | { name: string }[] | null;
+  treatment: { name: string; category: string } | { name: string; category: string }[] | null;
   treatment_name_freetext: string | null;
   treatment_log: { amount: number; is_paid: boolean }[] | { amount: number; is_paid: boolean } | null;
 }
@@ -28,7 +29,7 @@ export default async function ClientDetailPage({
     supabase.from("clients").select("*").eq("id", id).maybeSingle<Client>(),
     supabase
       .from("appointments")
-      .select("id, starts_at, status, treatment:treatments(name), treatment_name_freetext, treatment_log(amount, is_paid)")
+      .select("id, starts_at, status, treatment:treatments(name, category), treatment_name_freetext, treatment_log(amount, is_paid)")
       .eq("client_id", id)
       .order("starts_at", { ascending: false })
       .returns<HistoryRow[]>(),
@@ -46,9 +47,8 @@ export default async function ClientDetailPage({
       <p className="mt-5 mb-2 text-sm font-semibold text-text">📋 היסטוריית תורים</p>
       <div className="space-y-2 pb-8">
         {(history ?? []).map((h) => {
-          const treatmentName = Array.isArray(h.treatment)
-            ? h.treatment[0]?.name
-            : h.treatment?.name;
+          const treatment = Array.isArray(h.treatment) ? h.treatment[0] : h.treatment;
+          const treatmentName = treatment?.name ?? h.treatment_name_freetext;
           const log = Array.isArray(h.treatment_log) ? h.treatment_log[0] : h.treatment_log;
           return (
             <Link
@@ -58,7 +58,10 @@ export default async function ClientDetailPage({
             >
               <div className="flex-1 min-w-0">
                 <p className="truncate text-[15px] font-semibold">
-                  {treatmentName ?? h.treatment_name_freetext}
+                  <span aria-hidden>
+                    {getTreatmentEmoji(treatmentName, treatment?.category ?? "")}
+                  </span>{" "}
+                  {treatmentName}
                 </p>
                 <p className="text-sm text-text-muted">
                   {formatDate(h.starts_at)} · {formatTime(h.starts_at)}

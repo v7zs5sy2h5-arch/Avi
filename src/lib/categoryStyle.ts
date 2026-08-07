@@ -32,3 +32,27 @@ const fallback: CategoryStyle = {
 export function getCategoryStyle(category: string): CategoryStyle {
   return styles[category] ?? fallback;
 }
+
+const treatmentEmojiRules: [string, string][] = [
+  ["אקריל", "💎"],
+  ["לק", "💅"],
+  ["עמוק", "🧼"],
+  ["פוטותרפיה", "💡"],
+  ["הבהרה", "🌟"],
+  ["מזותרפיה", "💉"],
+  ["אלקטרופורציה", "⚡"],
+  ["סרחי", "✂️"],
+  ["RF", "🔥"],
+];
+
+export function getTreatmentEmoji(
+  name: string | null | undefined,
+  category: string,
+): string {
+  if (name) {
+    for (const [keyword, emoji] of treatmentEmojiRules) {
+      if (name.includes(keyword)) return emoji;
+    }
+  }
+  return getCategoryStyle(category).emoji;
+}

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Input, Label } from "@/components/ui/Field";
-import { getCategoryStyle } from "@/lib/categoryStyle";
+import { getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
 import type { Treatment } from "@/types/database";
 
 const OTHER_ID = "__other__";
@@ -69,6 +69,7 @@ export function TreatmentPicker({ treatments }: { treatments: Treatment[] }) {
                       )}
                     >
                       <div className="text-[15px] font-medium leading-snug">
+                        <span aria-hidden>{getTreatmentEmoji(t.name, category)}</span>{" "}
                         {t.name}
                       </div>
                       <div

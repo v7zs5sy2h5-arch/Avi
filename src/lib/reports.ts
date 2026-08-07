@@ -193,6 +193,74 @@ export async function getFacialsWeekProgress(
   };
 }
 
+export interface FacialsWeekComparison {
+  thisWeekCount: number;
+  thisWeekRevenue: number;
+  lastWeekCount: number;
+  lastWeekRevenue: number;
+  autoTargetCount: number;
+  autoTargetRevenue: number;
+}
+
+export async function getFacialsWeekComparison(
+  supabase: SupabaseClient,
+  thisWeekStart: Date,
+  thisWeekEnd: Date,
+  lastWeekStart: Date,
+  lastWeekEnd: Date,
+): Promise<FacialsWeekComparison> {
+  const [thisWeek, lastWeek] = await Promise.all([
+    getFacialsWeekProgress(supabase, thisWeekStart, thisWeekEnd),
+    getFacialsWeekProgress(supabase, lastWeekStart, lastWeekEnd),
+  ]);
+
+  return {
+    thisWeekCount: thisWeek.completedCount,
+    thisWeekRevenue: thisWeek.completedRevenue,
+    lastWeekCount: lastWeek.completedCount,
+    lastWeekRevenue: lastWeek.completedRevenue,
+    autoTargetCount: Math.max(1, Math.ceil(lastWeek.completedCount * 1.1)),
+    autoTargetRevenue: Math.max(1, Math.ceil(lastWeek.completedRevenue * 1.1)),
+  };
+}
+
+export interface FacialsTreatmentUsage {
+  id: string;
+  name: string;
+  count: number;
+}
+
+export async function getFacialsTreatmentUsage(
+  supabase: SupabaseClient,
+  start: Date,
+  end: Date,
+): Promise<FacialsTreatmentUsage[]> {
+  const [{ data: treatments }, { data: logs }] = await Promise.all([
+    supabase
+      .from("treatments")
+      .select("id, name, sort_order")
+      .eq("category", FACIALS_CATEGORY)
+      .order("sort_order"),
+    supabase
+      .from("treatment_log")
+      .select("treatment_id")
+      .gte("performed_at", start.toISOString())
+      .lt("performed_at", end.toISOString()),
+  ]);
+
+  const counts = new Map<string, number>();
+  for (const log of logs ?? []) {
+    if (!log.treatment_id) continue;
+    counts.set(log.treatment_id, (counts.get(log.treatment_id) ?? 0) + 1);
+  }
+
+  return (treatments ?? []).map((t) => ({
+    id: t.id as string,
+    name: t.name as string,
+    count: counts.get(t.id as string) ?? 0,
+  }));
+}
+
 export interface FollowUpRate {
   rate: number;
   completedCount: number;

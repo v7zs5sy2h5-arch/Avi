@@ -12,10 +12,12 @@ import {
   getIncomePerHourByCategory,
   getWeeklyPlannedMinutes,
   getFacialsWeekProgress,
+  getFacialsWeekComparison,
+  getFacialsTreatmentUsage,
 } from "@/lib/reports";
 import { weekStart, isoDate } from "@/lib/dates";
 import { cn, formatCurrency, formatTime, minutesToHm } from "@/lib/utils";
-import { getCategoryStyle } from "@/lib/categoryStyle";
+import { getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
 import { FACIALS_CATEGORY, NAILS_CATEGORY } from "@/types/database";
 import type { AppointmentWithRelations, WeeklyGoal } from "@/types/database";
 
@@ -28,6 +30,7 @@ export default async function DashboardPage() {
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const wStart = weekStart(now);
   const wEnd = addDays(wStart, 7);
+  const lastWStart = addDays(wStart, -7);
 
   const [
     { data: todayAppointments },
@@ -36,6 +39,8 @@ export default async function DashboardPage() {
     perHour,
     weeklyMinutes,
     facialsProgress,
+    facialsComparison,
+    facialsUsage,
     { data: goal },
   ] = await Promise.all([
     supabase
@@ -50,6 +55,8 @@ export default async function DashboardPage() {
     getIncomePerHourByCategory(supabase, monthStart, monthEnd),
     getWeeklyPlannedMinutes(supabase, wStart, wEnd),
     getFacialsWeekProgress(supabase, wStart, wEnd),
+    getFacialsWeekComparison(supabase, wStart, wEnd, lastWStart, wStart),
+    getFacialsTreatmentUsage(supabase, wStart, wEnd),
     supabase
       .from("weekly_goals")
       .select("*")
@@ -61,9 +68,22 @@ export default async function DashboardPage() {
   const facialsStat = perHour.find((s) => s.category === FACIALS_CATEGORY);
   const maxPerHour = Math.max(nailsStat?.perHour ?? 0, facialsStat?.perHour ?? 0, 1);
 
-  const summaryText = goal
-    ? `השבוע ${facialsProgress.completedCount} טיפולי פנים מתוך יעד ${goal.target_count}, ועוד ${facialsProgress.plannedCount} מתוכננים ביומן`
-    : `השבוע ${facialsProgress.completedCount} טיפולי פנים בוצעו, ועוד ${facialsProgress.plannedCount} מתוכננים ביומן`;
+  const effectiveTargetCount = Math.max(
+    goal?.target_count ?? 0,
+    facialsComparison.autoTargetCount,
+  );
+  const effectiveTargetRevenue = Math.max(
+    goal?.target_revenue ?? 0,
+    facialsComparison.autoTargetRevenue,
+  );
+  const remainingForGoal = Math.max(effectiveTargetCount - facialsProgress.completedCount, 0);
+  const hitGoal = facialsProgress.completedCount >= effectiveTargetCount;
+  const suggestedTreatments = facialsUsage
+    .slice()
+    .sort((a, b) => a.count - b.count)
+    .slice(0, 2);
+
+  const summaryText = `השבוע ${facialsProgress.completedCount} טיפולי פנים מתוך יעד ${effectiveTargetCount} (לפחות 10% יותר מ-${facialsComparison.lastWeekCount} בשבוע שעבר), ועוד ${facialsProgress.plannedCount} מתוכננים ביומן`;
 
   return (
     <div className="px-4">
@@ -88,6 +108,10 @@ export default async function DashboardPage() {
               const style = getCategoryStyle(
                 appt.treatment?.category ?? "",
               );
+              const treatmentEmoji = getTreatmentEmoji(
+                appt.treatment?.name ?? appt.treatment_name_freetext,
+                appt.treatment?.category ?? "",
+              );
               return (
                 <Link
                   key={appt.id}
@@ -108,7 +132,7 @@ export default async function DashboardPage() {
                       {appt.client?.name}
                     </p>
                     <p className="truncate text-sm text-text-muted">
-                      <span aria-hidden>{style.emoji}</span>{" "}
+                      <span aria-hidden>{treatmentEmoji}</span>{" "}
                       {appt.treatment?.name ?? appt.treatment_name_freetext}
                     </p>
                   </div>
@@ -167,36 +191,54 @@ export default async function DashboardPage() {
       </section>
 
       <section className="mt-3">
-        <Card>
-          <CardTitle>🎯 יעד שבועי — טיפולי פנים</CardTitle>
-          {goal ? (
-            <>
-              <div className="flex items-baseline justify-between mb-1">
-                <span className="text-sm">
-                  {facialsProgress.completedCount} / {goal.target_count} טיפולים
-                </span>
-                <span className="text-sm text-text-muted">
-                  {formatCurrency(facialsProgress.completedRevenue)} /{" "}
-                  {formatCurrency(goal.target_revenue)}
-                </span>
-              </div>
-              <div className="h-2 rounded-full bg-border-soft overflow-hidden">
-                <div
-                  className="h-full bg-accent"
-                  style={{
-                    width: `${Math.min(
-                      (facialsProgress.completedCount / Math.max(goal.target_count, 1)) * 100,
-                      100,
-                    )}%`,
-                  }}
-                />
-              </div>
-            </>
+        <Card className={hitGoal ? "border-success/40" : undefined}>
+          <CardTitle>✨ יעד שבועי — טיפולי פנים (לא ציפורניים)</CardTitle>
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="text-sm font-semibold">
+              {facialsProgress.completedCount} / {effectiveTargetCount} טיפולים
+            </span>
+            <span className="text-sm text-text-muted">
+              {formatCurrency(facialsProgress.completedRevenue)} /{" "}
+              {formatCurrency(effectiveTargetRevenue)}
+            </span>
+          </div>
+          <div className="h-2.5 rounded-full bg-border-soft overflow-hidden">
+            <div
+              className={cn(
+                "h-full transition-all",
+                hitGoal ? "bg-success" : "gradient-primary",
+              )}
+              style={{
+                width: `${Math.min(
+                  (facialsProgress.completedCount / Math.max(effectiveTargetCount, 1)) * 100,
+                  100,
+                )}%`,
+              }}
+            />
+          </div>
+
+          {hitGoal ? (
+            <p className="mt-3 text-sm font-semibold text-success">
+              🎉 כל הכבוד! עברת את היעד השבועי — גידול של לפחות 10% משבוע שעבר
+              ({facialsComparison.lastWeekCount} → {facialsProgress.completedCount}). תמשיכי כך!
+            </p>
           ) : (
-            <Link href="/settings/goal" className="text-sm text-accent-strong underline">
-              הגדירי יעד שבועי
-            </Link>
+            <div className="mt-3 rounded-xl bg-facials-bg/60 p-3">
+              <p className="text-sm font-semibold text-facials">
+                💪 עוד {remainingForGoal} טיפולי פנים השבוע כדי לגדול לפחות ב-10%
+                משבוע שעבר ({facialsComparison.lastWeekCount} ➜ {effectiveTargetCount})
+              </p>
+              {suggestedTreatments.length > 0 ? (
+                <p className="mt-1.5 text-sm text-text-muted">
+                  כדאי להציע ללקוחות השבוע:{" "}
+                  {suggestedTreatments
+                    .map((t) => `${getTreatmentEmoji(t.name, FACIALS_CATEGORY)} ${t.name}`)
+                    .join(" · ")}
+                </p>
+              ) : null}
+            </div>
           )}
+
           <p className="mt-3 text-sm text-text-muted">{summaryText}</p>
         </Card>
       </section>

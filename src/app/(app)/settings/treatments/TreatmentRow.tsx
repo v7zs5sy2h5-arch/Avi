@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Checkbox, Textarea } from "@/components/ui/Field";
 import { formatCurrency } from "@/lib/utils";
+import { getTreatmentEmoji } from "@/lib/categoryStyle";
 import { updateTreatment, deleteTreatment } from "./actions";
 import type { Treatment } from "@/types/database";
 
@@ -19,7 +20,10 @@ export function TreatmentRow({ treatment }: { treatment: Treatment }) {
     return (
       <Card className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[15px] font-medium">{treatment.name}</p>
+          <p className="text-[15px] font-medium">
+            <span aria-hidden>{getTreatmentEmoji(treatment.name, treatment.category)}</span>{" "}
+            {treatment.name}
+          </p>
           <p className="text-sm font-semibold text-accent-strong">
             {treatment.price != null
               ? formatCurrency(treatment.price)
