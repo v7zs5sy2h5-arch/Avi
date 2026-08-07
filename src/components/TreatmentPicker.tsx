@@ -49,7 +49,7 @@ export function TreatmentPicker({ treatments }: { treatments: Treatment[] }) {
         <div className="space-y-4">
           {grouped.map(([category, list]) => (
             <div key={category}>
-              <p className="text-xs text-text-muted mb-2">{category}</p>
+              <p className="text-sm text-text-muted mb-2">{category}</p>
               <div className="grid grid-cols-2 gap-2">
                 {list.map((t) => (
                   <button
@@ -64,7 +64,7 @@ export function TreatmentPicker({ treatments }: { treatments: Treatment[] }) {
                     )}
                   >
                     <div className="text-[15px] leading-snug">{t.name}</div>
-                    <div className="mt-1 text-xs text-text-muted">
+                    <div className="mt-1 text-sm text-text-muted">
                       {t.price != null
                         ? formatCurrency(t.price)
                         : t.price_note ?? "מחיר לעריכה"}

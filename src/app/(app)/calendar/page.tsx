@@ -144,7 +144,7 @@ export default async function CalendarPage({
                 <p className="truncate text-[15px] font-medium">
                   {appt.client?.name}
                 </p>
-                <p className="truncate text-xs text-text-muted">
+                <p className="truncate text-sm text-text-muted">
                   {appt.treatment?.name ?? appt.treatment_name_freetext}
                   {appt.expected_price != null
                     ? ` · ${formatCurrency(appt.expected_price)}`

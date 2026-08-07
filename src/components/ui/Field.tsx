@@ -68,7 +68,7 @@ export function FieldGroup({
     <div>
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
-      {hint ? <p className="mt-1 text-xs text-text-muted">{hint}</p> : null}
+      {hint ? <p className="mt-1 text-sm text-text-muted">{hint}</p> : null}
     </div>
   );
 }

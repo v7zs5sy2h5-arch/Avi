@@ -60,7 +60,7 @@ export default async function ClientDetailPage({
                 <p className="truncate text-[15px]">
                   {treatmentName ?? h.treatment_name_freetext}
                 </p>
-                <p className="text-xs text-text-muted">
+                <p className="text-sm text-text-muted">
                   {formatDate(h.starts_at)} · {formatTime(h.starts_at)}
                   {log ? ` · ${formatCurrency(log.amount)}` : ""}
                   {log && !log.is_paid ? " · ממתין לתשלום" : ""}

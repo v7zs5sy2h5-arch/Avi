@@ -53,7 +53,7 @@ export function PendingPaymentsModal({ items }: { items: PendingItem[] }) {
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{item.clientName}</p>
-                <p className="truncate text-xs text-text-muted">
+                <p className="truncate text-sm text-text-muted">
                   {item.itemLabel} · {formatDate(item.date)} ·{" "}
                   {formatCurrency(item.amount)}
                 </p>
@@ -67,7 +67,7 @@ export function PendingPaymentsModal({ items }: { items: PendingItem[] }) {
           );
         })}
         {items.length > preview.length ? (
-          <p className="text-xs text-text-muted text-center">
+          <p className="text-sm text-text-muted text-center">
             ועוד {items.length - preview.length} תשלומים...
           </p>
         ) : null}

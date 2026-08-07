@@ -20,7 +20,7 @@ export function CategoryRow({ category }: { category: ExpenseCategory }) {
         <div>
           <p className="text-[15px]">{category.name}</p>
           {category.default_amount != null ? (
-            <p className="text-xs text-text-muted">
+            <p className="text-sm text-text-muted">
               סכום מוצע: {formatCurrency(category.default_amount)}
             </p>
           ) : null}

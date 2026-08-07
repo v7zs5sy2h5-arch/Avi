@@ -96,7 +96,7 @@ export default async function DashboardPage() {
                   <p className="truncate text-[15px] font-medium">
                     {appt.client?.name}
                   </p>
-                  <p className="truncate text-xs text-text-muted">
+                  <p className="truncate text-sm text-text-muted">
                     {appt.treatment?.name ?? appt.treatment_name_freetext}
                   </p>
                 </div>
@@ -192,7 +192,7 @@ export default async function DashboardPage() {
         <Card>
           <CardTitle>שעות עבודה השבוע</CardTitle>
           <p className="text-2xl font-medium">{minutesToHm(weeklyMinutes)}</p>
-          <p className="text-xs text-text-muted mt-1">
+          <p className="text-sm text-text-muted mt-1">
             סה&quot;כ שעות מתוכננות/בוצעו השבוע (כולל תורים עתידיים השבוע)
           </p>
         </Card>

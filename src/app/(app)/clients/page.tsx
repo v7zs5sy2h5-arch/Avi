@@ -46,7 +46,7 @@ export default async function ClientsPage({
           >
             <div className="flex-1 min-w-0">
               <p className="text-[15px]">{c.name}</p>
-              {c.phone ? <p className="text-xs text-text-muted">{c.phone}</p> : null}
+              {c.phone ? <p className="text-sm text-text-muted">{c.phone}</p> : null}
             </div>
             <ChevronLeft size={18} className="text-text-muted" />
           </Link>

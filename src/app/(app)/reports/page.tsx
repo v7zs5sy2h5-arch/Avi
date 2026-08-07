@@ -134,7 +134,7 @@ export default async function ReportsPage({
         <p className="text-2xl font-medium text-accent-strong">
           {Math.round(followUp.rate * 100)}%
         </p>
-        <p className="text-xs text-text-muted mt-1">
+        <p className="text-sm text-text-muted mt-1">
           {followUp.followUpCount} מתוך {followUp.completedCount} תורים שהושלמו הובילו לתור המשך
         </p>
       </Card>
@@ -181,7 +181,7 @@ export default async function ReportsPage({
                 key={f.value}
                 href={`/reports?month=${monthParam(monthStart)}&kind=${f.value}`}
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-xs",
+                  "rounded-full px-2.5 py-1 text-sm",
                   kind === f.value
                     ? "bg-accent text-accent-foreground"
                     : "bg-surface-soft text-text-muted",
@@ -201,7 +201,7 @@ export default async function ReportsPage({
               <div key={`${t.kind}-${t.id}`} className="flex items-center justify-between text-sm">
                 <div className="min-w-0">
                   <p className="truncate">{t.label}</p>
-                  <p className="truncate text-xs text-text-muted">
+                  <p className="truncate text-sm text-text-muted">
                     {formatDate(t.date)}
                     {t.subLabel ? ` · ${t.subLabel}` : ""}
                     {t.isPaid === false ? " · ממתין לתשלום" : ""}

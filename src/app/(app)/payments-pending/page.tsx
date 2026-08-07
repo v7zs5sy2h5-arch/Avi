@@ -53,7 +53,7 @@ export default async function PaymentsPendingPage() {
                       >
                         <div className="min-w-0">
                           <p className="truncate text-[15px]">{item.itemLabel}</p>
-                          <p className="text-xs text-text-muted">
+                          <p className="text-sm text-text-muted">
                             {formatDate(item.date)}
                           </p>
                         </div>

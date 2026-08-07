@@ -44,7 +44,7 @@ export function BottomNav() {
               <Link
                 href={href}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-xs",
+                  "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-sm",
                   active ? "text-accent-strong" : "text-text-muted",
                 )}
               >

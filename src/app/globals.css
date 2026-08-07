@@ -4,12 +4,12 @@
   --color-bg: #f2e9dd;
   --color-surface: #e8d5c4;
   --color-surface-soft: #ede1d2;
-  --color-text: #4a3f35;
-  --color-text-muted: #8a7a68;
-  --color-border: #d9cfc2;
-  --color-border-soft: #e3d8c9;
-  --color-accent: #b08968;
-  --color-accent-strong: #96694a;
+  --color-text: #3a2f26;
+  --color-text-muted: #6b5847;
+  --color-border: #c9b8a4;
+  --color-border-soft: #d6c4ae;
+  --color-accent: #a67551;
+  --color-accent-strong: #8a5a3a;
   --color-accent-foreground: #fdf8f2;
   --color-success: #5b6b3d;
   --color-success-bg: #e3e6d5;
@@ -56,8 +56,8 @@ body {
 
 .font-heading {
   font-family: var(--font-heading), sans-serif;
-  font-weight: 300;
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
 ::-webkit-scrollbar {

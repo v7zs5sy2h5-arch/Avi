@@ -56,7 +56,7 @@ export function NewAppointmentForm({
           <button
             type="button"
             onClick={setNow}
-            className="text-xs text-accent-strong underline underline-offset-2"
+            className="text-sm text-accent-strong underline underline-offset-2"
           >
             עכשיו
           </button>
@@ -86,7 +86,7 @@ export function NewAppointmentForm({
         onChange={(e) => setRetroactive(e.target.checked)}
       />
       {retroactive ? (
-        <p className="text-xs text-text-muted -mt-3">
+        <p className="text-sm text-text-muted -mt-3">
           לאחר השמירה יפתח טופס אישור הכנסה למילוי פרטי התשלום.
         </p>
       ) : null}

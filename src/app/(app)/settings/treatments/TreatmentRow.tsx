@@ -20,7 +20,7 @@ export function TreatmentRow({ treatment }: { treatment: Treatment }) {
       <Card className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[15px]">{treatment.name}</p>
-          <p className="text-xs text-text-muted">
+          <p className="text-sm text-text-muted">
             {treatment.price != null
               ? formatCurrency(treatment.price)
               : (treatment.price_note ?? "מחיר לעריכה")}

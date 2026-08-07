@@ -73,7 +73,7 @@ export function ClientAutocomplete({
               >
                 {c.name}
                 {c.phone ? (
-                  <span className="text-text-muted text-xs mr-2">
+                  <span className="text-text-muted text-sm mr-2">
                     {c.phone}
                   </span>
                 ) : null}
@@ -84,7 +84,7 @@ export function ClientAutocomplete({
       )}
 
       {query.trim() && !exactMatch && !selectedId ? (
-        <p className="mt-1 text-xs text-accent-strong">
+        <p className="mt-1 text-sm text-accent-strong">
           תיווצר לקוחה חדשה בשם &ldquo;{query.trim()}&rdquo;
         </p>
       ) : null}
