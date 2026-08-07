@@ -82,6 +82,17 @@ export default async function DashboardPage() {
     (a) => a.status === "planned" && new Date(a.starts_at).getTime() >= now.getTime(),
   ).length;
 
+  const todayCategoryMap = new Map<string, { total: number; completed: number }>();
+  for (const a of todayList) {
+    if (a.status === "cancelled" || a.status === "no_show") continue;
+    const cat = a.treatment?.category ?? "אחר";
+    const entry = todayCategoryMap.get(cat) ?? { total: 0, completed: 0 };
+    entry.total += 1;
+    if (a.status === "completed") entry.completed += 1;
+    todayCategoryMap.set(cat, entry);
+  }
+  const todayCategoryBreakdown = Array.from(todayCategoryMap.entries());
+
   let nowActionText: string;
   if (activeAppt) {
     nowActionText = "🟢 באמצע טיפול כרגע — תתמקדי בלקוחה, השאר יחכה";
@@ -192,6 +203,26 @@ export default async function DashboardPage() {
               <p className="text-[11px] text-text-muted">נותרו היום</p>
             </div>
           </div>
+
+          {todayCategoryBreakdown.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {todayCategoryBreakdown.map(([cat, stat]) => {
+                const style = getCategoryStyle(cat);
+                return (
+                  <span
+                    key={cat}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-semibold",
+                      style.bg,
+                      style.text,
+                    )}
+                  >
+                    <span aria-hidden>{style.emoji}</span> {cat} · {stat.completed}/{stat.total}
+                  </span>
+                );
+              })}
+            </div>
+          ) : null}
 
           <p className="mt-3 text-sm font-medium">{nowActionText}</p>
 
