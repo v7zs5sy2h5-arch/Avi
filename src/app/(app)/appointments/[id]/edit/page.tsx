@@ -21,7 +21,7 @@ export default async function EditAppointmentPage({
 
   return (
     <div>
-      <Header title="עריכת תור" />
+      <Header title="עריכת תור ✏️" />
       <EditAppointmentForm appointment={appointment} />
     </div>
   );

@@ -38,12 +38,12 @@ export default async function ClientDetailPage({
 
   return (
     <div className="px-4">
-      <Header title="פרטי לקוחה" />
+      <Header title="פרטי לקוחה 👤" />
       <div className="mt-3">
         <ClientInfoForm client={client} />
       </div>
 
-      <p className="mt-5 mb-2 text-sm text-text-muted">היסטוריית תורים</p>
+      <p className="mt-5 mb-2 text-sm font-semibold text-text">📋 היסטוריית תורים</p>
       <div className="space-y-2 pb-8">
         {(history ?? []).map((h) => {
           const treatmentName = Array.isArray(h.treatment)
@@ -54,10 +54,10 @@ export default async function ClientDetailPage({
             <Link
               key={h.id}
               href={`/appointments/${h.id}`}
-              className="flex items-center gap-3 rounded-2xl border border-border-soft bg-surface p-3.5"
+              className="card-interactive flex items-center gap-3 rounded-2xl border border-border-soft bg-surface p-3.5 shadow-sm shadow-black/[0.03]"
             >
               <div className="flex-1 min-w-0">
-                <p className="truncate text-[15px]">
+                <p className="truncate text-[15px] font-semibold">
                   {treatmentName ?? h.treatment_name_freetext}
                 </p>
                 <p className="text-sm text-text-muted">

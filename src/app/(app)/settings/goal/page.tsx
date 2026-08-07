@@ -37,7 +37,7 @@ export default async function WeeklyGoalPage() {
 
   return (
     <div>
-      <Header title="יעד שבועי" />
+      <Header title="יעד שבועי 🎯" />
       <div className="px-4">
         <Card className="mt-2 mb-4">
           <p className="text-sm text-text-muted">

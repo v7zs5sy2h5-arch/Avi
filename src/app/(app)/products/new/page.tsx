@@ -11,7 +11,7 @@ export default async function NewProductSalePage() {
 
   return (
     <div>
-      <Header title="מכירת מוצר" />
+      <Header title="מכירת מוצר 🛍️" />
       <ProductSaleForm clients={clients ?? []} />
     </div>
   );

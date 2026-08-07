@@ -84,7 +84,7 @@ export default async function ReportsPage({
 
   return (
     <div className="px-4">
-      <Header title="דוחות" />
+      <Header title="דוחות 📊" />
 
       <div className="flex items-center justify-between pt-3">
         <Link href={`/reports?month=${monthParam(prevMonth)}`} className="p-2 text-text-muted">
@@ -99,7 +99,7 @@ export default async function ReportsPage({
       </div>
 
       <Card className="mt-4">
-        <CardTitle>סיכום חודשי (שולם בפועל)</CardTitle>
+        <CardTitle>💰 סיכום חודשי (שולם בפועל)</CardTitle>
         <div className="space-y-1.5 text-sm">
           <Row label="הכנסה מטיפולים" value={formatCurrency(summary.treatmentIncome)} />
           <Row label="הכנסה ממכירת מוצרים" value={formatCurrency(summary.productIncome)} />
@@ -112,7 +112,7 @@ export default async function ReportsPage({
       </Card>
 
       <Card className="mt-3">
-        <CardTitle>הכנסה לשעת עבודה לפי טיפול</CardTitle>
+        <CardTitle>📊 הכנסה לשעת עבודה לפי טיפול</CardTitle>
         {treatmentStats.length === 0 ? (
           <p className="text-sm text-text-muted">אין נתונים החודש</p>
         ) : (
@@ -130,8 +130,8 @@ export default async function ReportsPage({
       </Card>
 
       <Card className="mt-3">
-        <CardTitle>שיעור תור חוזר</CardTitle>
-        <p className="text-2xl font-medium text-accent-strong">
+        <CardTitle>🔁 שיעור תור חוזר</CardTitle>
+        <p className="text-2xl font-bold text-accent-strong">
           {Math.round(followUp.rate * 100)}%
         </p>
         <p className="text-sm text-text-muted mt-1">
@@ -140,17 +140,17 @@ export default async function ReportsPage({
       </Card>
 
       <Card className="mt-3">
-        <CardTitle>ציפורניים מול טיפולי פנים — מגמה</CardTitle>
+        <CardTitle>💅✨ ציפורניים מול טיפולי פנים — מגמה</CardTitle>
         <NailsFacialsChart data={nailsFacialsTrend} />
       </Card>
 
       <Card className="mt-3">
-        <CardTitle>שעות עבודה שבועיות — מגמה</CardTitle>
+        <CardTitle>⏱️ שעות עבודה שבועיות — מגמה</CardTitle>
         <WeeklyHoursChart data={weeklyHoursTrend} />
       </Card>
 
       <Card className="mt-3">
-        <CardTitle>היסטוריית יעדים שבועיים</CardTitle>
+        <CardTitle>🎯 היסטוריית יעדים שבועיים</CardTitle>
         {!goals || goals.length === 0 ? (
           <p className="text-sm text-text-muted">אין עדיין יעדים שמורים</p>
         ) : (
@@ -169,7 +169,7 @@ export default async function ReportsPage({
 
       <Card className="mt-3 mb-8">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-text-muted">כל התנועות</p>
+          <p className="text-sm font-semibold text-text">📋 כל התנועות</p>
           <div className="flex gap-1.5">
             {[
               { value: "all", label: "הכל" },
@@ -181,9 +181,9 @@ export default async function ReportsPage({
                 key={f.value}
                 href={`/reports?month=${monthParam(monthStart)}&kind=${f.value}`}
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-sm",
+                  "rounded-full px-2.5 py-1 text-sm font-medium",
                   kind === f.value
-                    ? "bg-accent text-accent-foreground"
+                    ? "gradient-primary text-accent-foreground shadow-sm shadow-accent/25"
                     : "bg-surface-soft text-text-muted",
                 )}
               >
@@ -209,7 +209,7 @@ export default async function ReportsPage({
                 </div>
                 <span
                   className={cn(
-                    "shrink-0 font-medium",
+                    "shrink-0 font-bold",
                     t.amount < 0 ? "text-warning" : "text-success",
                   )}
                 >
@@ -240,8 +240,8 @@ function Row({
       <span className="text-text-muted">{label}</span>
       <span
         className={cn(
-          strong && "font-medium",
-          accent && "text-accent-strong text-lg",
+          strong && "font-semibold",
+          accent && "text-accent-strong text-lg font-bold",
         )}
       >
         {value}

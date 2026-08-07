@@ -1,22 +1,34 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg: #f2e9dd;
-  --color-surface: #e8d5c4;
-  --color-surface-soft: #ede1d2;
-  --color-text: #3a2f26;
+  --color-bg: #fdf6ee;
+  --color-surface: #ffffff;
+  --color-surface-soft: #fbeee0;
+  --color-text: #2c2015;
   --color-text-muted: #6b5847;
-  --color-border: #c9b8a4;
-  --color-border-soft: #d6c4ae;
-  --color-accent: #a67551;
-  --color-accent-strong: #8a5a3a;
-  --color-accent-foreground: #fdf8f2;
-  --color-success: #5b6b3d;
-  --color-success-bg: #e3e6d5;
-  --color-warning: #8b4a3a;
-  --color-warning-bg: #f0ddd6;
-  --color-nails: #cbb6a2;
-  --color-facials: #96694a;
+  --color-border: #e3cfb4;
+  --color-border-soft: #eeddc7;
+
+  --color-accent: #c1673d;
+  --color-accent-strong: #a34f2b;
+  --color-accent-soft: #f5ddc9;
+  --color-accent-foreground: #fff8f0;
+
+  --color-success: #3f7a4e;
+  --color-success-bg: #dcefe0;
+  --color-warning: #c1443a;
+  --color-warning-bg: #fbdedb;
+
+  --color-nails: #c2477e;
+  --color-nails-bg: #fbe1ec;
+  --color-facials: #dd7a3a;
+  --color-facials-bg: #fce6d3;
+
+  --color-gold: #b98a1f;
+  --color-gold-bg: #f6ecd2;
+
+  --gradient-primary: linear-gradient(135deg, #d17f4e, #a34f2b);
+  --gradient-header: linear-gradient(135deg, #fdf6ee 0%, #fbe4d0 100%);
 }
 
 @theme inline {
@@ -29,13 +41,18 @@
   --color-border-soft: var(--color-border-soft);
   --color-accent: var(--color-accent);
   --color-accent-strong: var(--color-accent-strong);
+  --color-accent-soft: var(--color-accent-soft);
   --color-accent-foreground: var(--color-accent-foreground);
   --color-success: var(--color-success);
   --color-success-bg: var(--color-success-bg);
   --color-warning: var(--color-warning);
   --color-warning-bg: var(--color-warning-bg);
   --color-nails: var(--color-nails);
+  --color-nails-bg: var(--color-nails-bg);
   --color-facials: var(--color-facials);
+  --color-facials-bg: var(--color-facials-bg);
+  --color-gold: var(--color-gold);
+  --color-gold-bg: var(--color-gold-bg);
   --font-heading: var(--font-assistant);
   --font-body: var(--font-assistant);
 }
@@ -56,8 +73,24 @@ body {
 
 .font-heading {
   font-family: var(--font-heading), sans-serif;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.gradient-primary {
+  background-image: var(--gradient-primary);
+}
+
+.gradient-header {
+  background-image: var(--gradient-header);
+}
+
+.card-interactive {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-interactive:active {
+  transform: scale(0.98);
 }
 
 ::-webkit-scrollbar {

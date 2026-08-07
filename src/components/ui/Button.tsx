@@ -7,12 +7,12 @@ type Size = "md" | "lg" | "sm";
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-accent text-accent-foreground hover:bg-accent-strong active:bg-accent-strong disabled:opacity-50",
+    "gradient-primary text-accent-foreground shadow-md shadow-accent/25 hover:brightness-105 active:brightness-95 disabled:opacity-50 disabled:shadow-none",
   secondary:
-    "bg-transparent border border-surface text-text hover:bg-surface-soft active:bg-surface-soft disabled:opacity-50",
+    "bg-transparent border-2 border-accent-soft text-text hover:bg-surface-soft active:bg-surface-soft disabled:opacity-50",
   ghost: "bg-transparent text-text-muted hover:bg-surface-soft",
   danger:
-    "bg-transparent border border-warning text-warning hover:bg-warning-bg",
+    "bg-transparent border-2 border-warning text-warning hover:bg-warning-bg",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -35,7 +35,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-colors duration-150 disabled:cursor-not-allowed",
+        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 disabled:cursor-not-allowed",
         variantClasses[variant],
         sizeClasses[size],
         className,
@@ -62,7 +62,7 @@ export function LinkButton({
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center justify-center gap-2 font-medium transition-colors duration-150",
+        "inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150",
         variantClasses[variant],
         sizeClasses[size],
         className,

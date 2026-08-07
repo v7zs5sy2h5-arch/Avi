@@ -13,7 +13,7 @@ export default async function NewAppointmentPage() {
 
   return (
     <div>
-      <Header title="קביעת תור חדש" />
+      <Header title="קביעת תור חדש ✨" />
       <Suspense>
         <NewAppointmentForm
           clients={clients ?? []}

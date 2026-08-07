@@ -19,7 +19,7 @@ export default async function PaymentsPendingPage() {
 
   return (
     <div className="px-4">
-      <Header title="תשלומים ממתינים" />
+      <Header title="תשלומים ממתינים ⏳" />
 
       {items.length === 0 ? (
         <p className="py-12 text-center text-sm text-text-muted">
@@ -28,8 +28,8 @@ export default async function PaymentsPendingPage() {
       ) : (
         <>
           <Card className="mt-4 flex items-center justify-between">
-            <span className="text-text-muted text-sm">סה&quot;כ ממתין</span>
-            <span className="text-lg font-medium text-warning">
+            <span className="text-text-muted text-sm">💰 סה&quot;כ ממתין</span>
+            <span className="text-lg font-bold text-warning">
               {formatCurrency(total)}
             </span>
           </Card>
@@ -37,8 +37,8 @@ export default async function PaymentsPendingPage() {
           <div className="mt-4 space-y-4 pb-8">
             {Array.from(byClient.entries()).map(([clientName, list]) => (
               <div key={clientName}>
-                <p className="mb-1.5 text-sm font-medium text-text-muted">
-                  {clientName}
+                <p className="mb-1.5 text-sm font-semibold text-text">
+                  👤 {clientName}
                 </p>
                 <div className="space-y-2">
                   {list.map((item) => {

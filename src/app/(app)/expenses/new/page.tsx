@@ -11,7 +11,7 @@ export default async function NewExpensePage() {
 
   return (
     <div>
-      <Header title="הוספת הוצאה" />
+      <Header title="הוספת הוצאה 🧾" />
       <ExpenseForm categories={categories ?? []} />
     </div>
   );

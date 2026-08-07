@@ -22,7 +22,7 @@ export default async function FollowUpPage({
 
   return (
     <div>
-      <Header title="תור המשך" />
+      <Header title="תור המשך 🔁" />
       <FollowUpForm
         appointmentId={id}
         isSeries={Boolean(appointment.treatment?.is_series)}

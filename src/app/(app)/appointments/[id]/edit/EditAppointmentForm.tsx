@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateAppointment } from "../../actions";
 import type { FormActionState } from "../../actions";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +19,12 @@ export function EditAppointmentForm({
   const [state, formAction, pending] = useActionState(action, initialState);
   const start = new Date(appointment.starts_at);
   const pad = (n: number) => String(n).padStart(2, "0");
+  const [date, setDate] = useState(isoDate(start));
+  const [time, setTime] = useState(`${pad(start.getHours())}:${pad(start.getMinutes())}`);
+
+  const isPast =
+    appointment.status === "planned" &&
+    new Date(`${date}T${time}:00`).getTime() < new Date().getTime();
 
   return (
     <form action={formAction} className="space-y-5 px-4 pb-6">
@@ -29,7 +35,8 @@ export function EditAppointmentForm({
             id="date"
             type="date"
             name="date"
-            defaultValue={isoDate(start)}
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
             required
           />
         </div>
@@ -39,11 +46,17 @@ export function EditAppointmentForm({
             id="time"
             type="time"
             name="time"
-            defaultValue={`${pad(start.getHours())}:${pad(start.getMinutes())}`}
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
             required
           />
         </div>
       </div>
+      {isPast ? (
+        <p className="text-sm text-warning font-medium -mt-3">
+          ⚠️ לא ניתן לקבוע תור לתאריך או שעה שכבר עברו
+        </p>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -83,7 +96,7 @@ export function EditAppointmentForm({
         <p className="text-sm text-warning">{state.error}</p>
       ) : null}
 
-      <Button type="submit" size="lg" className="w-full" disabled={pending}>
+      <Button type="submit" size="lg" className="w-full" disabled={pending || isPast}>
         {pending ? "שומרת..." : "עדכון תור"}
       </Button>
     </form>

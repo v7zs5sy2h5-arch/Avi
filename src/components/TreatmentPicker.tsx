@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Input, Label } from "@/components/ui/Field";
+import { getCategoryStyle } from "@/lib/categoryStyle";
 import type { Treatment } from "@/types/database";
 
 const OTHER_ID = "__other__";
@@ -47,36 +48,48 @@ export function TreatmentPicker({ treatments }: { treatments: Treatment[] }) {
       <div>
         <Label>טיפול</Label>
         <div className="space-y-4">
-          {grouped.map(([category, list]) => (
-            <div key={category}>
-              <p className="text-sm text-text-muted mb-2">{category}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {list.map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => selectTreatment(t)}
-                    className={cn(
-                      "rounded-xl border p-3 text-right transition-colors",
-                      selectedId === t.id
-                        ? "border-accent bg-accent/10"
-                        : "border-border-soft bg-bg hover:bg-surface-soft",
-                    )}
-                  >
-                    <div className="text-[15px] leading-snug">{t.name}</div>
-                    <div className="mt-1 text-sm text-text-muted">
-                      {t.price != null
-                        ? formatCurrency(t.price)
-                        : t.price_note ?? "מחיר לעריכה"}
-                      {t.duration_minutes != null
-                        ? ` · ${t.duration_minutes} דק'`
-                        : ""}
-                    </div>
-                  </button>
-                ))}
+          {grouped.map(([category, list]) => {
+            const style = getCategoryStyle(category);
+            return (
+              <div key={category}>
+                <p className="text-sm font-semibold text-text mb-2">
+                  <span aria-hidden>{style.emoji}</span> {category}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {list.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => selectTreatment(t)}
+                      className={cn(
+                        "rounded-xl border-2 p-3 text-right transition-colors",
+                        selectedId === t.id
+                          ? cn(style.border, style.bg)
+                          : "border-border-soft bg-bg hover:bg-surface-soft",
+                      )}
+                    >
+                      <div className="text-[15px] font-medium leading-snug">
+                        {t.name}
+                      </div>
+                      <div
+                        className={cn(
+                          "mt-1 text-sm font-semibold",
+                          selectedId === t.id ? style.text : "text-text-muted",
+                        )}
+                      >
+                        {t.price != null
+                          ? formatCurrency(t.price)
+                          : t.price_note ?? "מחיר לעריכה"}
+                        {t.duration_minutes != null
+                          ? ` · ${t.duration_minutes} דק'`
+                          : ""}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           <button
             type="button"
             onClick={selectOther}

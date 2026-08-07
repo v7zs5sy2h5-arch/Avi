@@ -47,6 +47,11 @@ export async function createAppointment(
   if (!treatmentId && !treatmentFreetext)
     return { error: "יש לבחור טיפול" };
 
+  const startsAt = new Date(`${date}T${time}:00`);
+  if (!markCompleted && startsAt.getTime() < Date.now()) {
+    return { error: "לא ניתן לקבוע תור לתאריך או שעה שכבר עברו" };
+  }
+
   let finalClientId: string | null;
   try {
     finalClientId = await resolveClientId(supabase, user.id, clientId, clientName);
@@ -55,7 +60,6 @@ export async function createAppointment(
   }
   if (!finalClientId) return { error: "יש לבחור או להזין שם לקוחה" };
 
-  const startsAt = new Date(`${date}T${time}:00`);
   const status: AppointmentStatus = markCompleted ? "completed" : "planned";
 
   const { data: appointment, error } = await supabase
@@ -114,6 +118,20 @@ export async function updateAppointment(
   if (!date || !time) return { error: "יש לבחור תאריך ושעה" };
 
   const startsAt = new Date(`${date}T${time}:00`);
+
+  const { data: existing } = await supabase
+    .from("appointments")
+    .select("status")
+    .eq("id", appointmentId)
+    .eq("user_id", user.id)
+    .maybeSingle<{ status: AppointmentStatus }>();
+
+  if (
+    existing?.status === "planned" &&
+    startsAt.getTime() < Date.now()
+  ) {
+    return { error: "לא ניתן לקבוע תור לתאריך או שעה שכבר עברו" };
+  }
 
   const { error } = await supabase
     .from("appointments")

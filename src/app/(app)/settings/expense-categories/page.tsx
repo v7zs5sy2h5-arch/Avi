@@ -14,7 +14,7 @@ export default async function ExpenseCategoriesPage() {
 
   return (
     <div className="px-4">
-      <Header title="קטגוריות הוצאה" />
+      <Header title="קטגוריות הוצאה 🧾" />
       <div className="mt-4 space-y-2 pb-8">
         {(categories ?? []).map((c) => (
           <CategoryRow key={c.id} category={c} />

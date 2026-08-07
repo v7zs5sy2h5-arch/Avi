@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/layout/Header";
 import { TreatmentRow } from "./TreatmentRow";
 import { AddTreatmentForm } from "./AddTreatmentForm";
+import { getCategoryStyle } from "@/lib/categoryStyle";
 import type { Treatment } from "@/types/database";
 
 export default async function TreatmentsSettingsPage() {
@@ -20,18 +21,23 @@ export default async function TreatmentsSettingsPage() {
 
   return (
     <div className="px-4">
-      <Header title="ניהול מחירון" />
+      <Header title="ניהול מחירון 💅" />
       <div className="mt-4 space-y-5 pb-8">
-        {Array.from(grouped.entries()).map(([category, list]) => (
-          <div key={category}>
-            <p className="mb-2 text-sm text-text-muted">{category}</p>
-            <div className="space-y-2">
-              {list.map((t) => (
-                <TreatmentRow key={t.id} treatment={t} />
-              ))}
+        {Array.from(grouped.entries()).map(([category, list]) => {
+          const style = getCategoryStyle(category);
+          return (
+            <div key={category}>
+              <p className="mb-2 text-sm font-semibold text-text">
+                <span aria-hidden>{style.emoji}</span> {category}
+              </p>
+              <div className="space-y-2">
+                {list.map((t) => (
+                  <TreatmentRow key={t.id} treatment={t} />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <AddTreatmentForm categories={categories} />
       </div>
     </div>

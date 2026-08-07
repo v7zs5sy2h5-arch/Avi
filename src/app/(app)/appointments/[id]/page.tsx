@@ -39,7 +39,7 @@ export default async function AppointmentDetailPage({
 
   return (
     <div className="px-4">
-      <Header title="פרטי תור" />
+      <Header title="פרטי תור 🗓️" />
 
       <Card className="mt-4">
         <div className="flex items-start justify-between">

@@ -31,7 +31,7 @@ export function BottomNav() {
                   href={href}
                   className="flex flex-col items-center gap-1"
                 >
-                  <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-lg shadow-accent/30">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full gradient-primary text-accent-foreground shadow-lg shadow-accent/30">
                     <Icon size={26} />
                   </span>
                 </Link>
@@ -45,7 +45,7 @@ export function BottomNav() {
                 href={href}
                 className={cn(
                   "flex flex-col items-center gap-1 px-2 py-1.5 rounded-xl text-sm",
-                  active ? "text-accent-strong" : "text-text-muted",
+                  active ? "text-accent-strong font-semibold" : "text-text-muted",
                 )}
               >
                 <Icon size={22} strokeWidth={active ? 2.4 : 1.8} />

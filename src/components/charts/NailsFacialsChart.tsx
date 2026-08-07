@@ -18,12 +18,12 @@ export function NailsFacialsChart({ data }: { data: NailsFacialsTrendPoint[] }) 
       <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
         <XAxis
           dataKey="label"
-          tick={{ fill: "#8a7a68", fontSize: 12 }}
-          axisLine={{ stroke: "#d9cfc2" }}
+          tick={{ fill: "#6b5847", fontSize: 12, fontWeight: 600 }}
+          axisLine={{ stroke: "#eeddc7" }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#8a7a68", fontSize: 11 }}
+          tick={{ fill: "#6b5847", fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           width={48}
@@ -31,15 +31,15 @@ export function NailsFacialsChart({ data }: { data: NailsFacialsTrendPoint[] }) 
         <Tooltip
           formatter={(value) => formatCurrency(Number(value))}
           contentStyle={{
-            background: "#f2e9dd",
-            border: "1px solid #d9cfc2",
+            background: "#ffffff",
+            border: "1px solid #eeddc7",
             borderRadius: 12,
             fontSize: 13,
           }}
         />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
-        <Bar dataKey="nailsAmount" name="ציפורניים" fill="#cbb6a2" radius={[6, 6, 0, 0]} />
-        <Bar dataKey="facialsAmount" name="טיפולי פנים" fill="#96694a" radius={[6, 6, 0, 0]} />
+        <Legend wrapperStyle={{ fontSize: 12, fontWeight: 600 }} />
+        <Bar dataKey="nailsAmount" name="💅 ציפורניים" fill="#c2477e" radius={[6, 6, 0, 0]} />
+        <Bar dataKey="facialsAmount" name="✨ טיפולי פנים" fill="#dd7a3a" radius={[6, 6, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

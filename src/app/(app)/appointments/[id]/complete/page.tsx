@@ -23,7 +23,7 @@ export default async function CompleteAppointmentPage({
 
   return (
     <div>
-      <Header title="אישור הכנסה" />
+      <Header title="אישור הכנסה 💰" />
       <CompleteForm appointment={appointment} />
     </div>
   );

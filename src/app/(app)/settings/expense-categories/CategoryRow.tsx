@@ -18,9 +18,11 @@ export function CategoryRow({ category }: { category: ExpenseCategory }) {
     return (
       <Card className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-[15px]">{category.name}</p>
+          <p className="text-[15px] font-medium">
+            <span aria-hidden>🧾</span> {category.name}
+          </p>
           {category.default_amount != null ? (
-            <p className="text-sm text-text-muted">
+            <p className="text-sm font-semibold text-warning">
               סכום מוצע: {formatCurrency(category.default_amount)}
             </p>
           ) : null}

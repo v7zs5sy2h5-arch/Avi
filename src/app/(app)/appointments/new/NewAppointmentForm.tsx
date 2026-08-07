@@ -44,6 +44,9 @@ export function NewAppointmentForm({
     setTime(n.time);
   }
 
+  const isPast =
+    !retroactive && date && time && new Date(`${date}T${time}:00`).getTime() < new Date().getTime();
+
   return (
     <form action={formAction} className="space-y-6 px-4 pb-6">
       <ClientAutocomplete clients={clients} />
@@ -66,6 +69,7 @@ export function NewAppointmentForm({
             type="date"
             name="date"
             value={date}
+            min={retroactive ? undefined : initial.date}
             onChange={(e) => setDate(e.target.value)}
             required
           />
@@ -77,6 +81,11 @@ export function NewAppointmentForm({
             required
           />
         </div>
+        {isPast ? (
+          <p className="text-sm text-warning font-medium">
+            ⚠️ לא ניתן לקבוע תור לתאריך או שעה שכבר עברו
+          </p>
+        ) : null}
       </div>
 
       <Checkbox
@@ -100,7 +109,7 @@ export function NewAppointmentForm({
         <p className="text-sm text-warning">{state.error}</p>
       ) : null}
 
-      <Button type="submit" size="lg" className="w-full" disabled={pending}>
+      <Button type="submit" size="lg" className="w-full" disabled={pending || !!isPast}>
         {pending ? "שומרת..." : "שמירת תור"}
       </Button>
     </form>

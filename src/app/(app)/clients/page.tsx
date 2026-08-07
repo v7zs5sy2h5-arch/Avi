@@ -20,7 +20,7 @@ export default async function ClientsPage({
 
   return (
     <div className="px-4">
-      <Header title="לקוחות" />
+      <Header title="לקוחות 👥" />
 
       <form className="mt-3" method="get">
         <div className="relative">
@@ -42,10 +42,13 @@ export default async function ClientsPage({
           <Link
             key={c.id}
             href={`/clients/${c.id}`}
-            className="flex items-center gap-3 rounded-2xl border border-border-soft bg-surface p-3.5"
+            className="card-interactive flex items-center gap-3 rounded-2xl border border-border-soft bg-surface p-3.5 shadow-sm shadow-black/[0.03]"
           >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-base">
+              👤
+            </span>
             <div className="flex-1 min-w-0">
-              <p className="text-[15px]">{c.name}</p>
+              <p className="text-[15px] font-semibold">{c.name}</p>
               {c.phone ? <p className="text-sm text-text-muted">{c.phone}</p> : null}
             </div>
             <ChevronLeft size={18} className="text-text-muted" />

@@ -14,7 +14,8 @@ import {
   getFacialsWeekProgress,
 } from "@/lib/reports";
 import { weekStart, isoDate } from "@/lib/dates";
-import { formatCurrency, formatTime, minutesToHm } from "@/lib/utils";
+import { cn, formatCurrency, formatTime, minutesToHm } from "@/lib/utils";
+import { getCategoryStyle } from "@/lib/categoryStyle";
 import { FACIALS_CATEGORY, NAILS_CATEGORY } from "@/types/database";
 import type { AppointmentWithRelations, WeeklyGoal } from "@/types/database";
 
@@ -67,7 +68,7 @@ export default async function DashboardPage() {
   return (
     <div className="px-4">
       <header className="flex items-center justify-between pt-4 pb-2">
-        <h1 className="font-heading text-xl">שלום קרן</h1>
+        <h1 className="font-heading text-xl">שלום קרן 👋</h1>
         <Image src="/logo-mark.png" alt="" width={24} height={34} />
       </header>
 
@@ -76,43 +77,55 @@ export default async function DashboardPage() {
       </LinkButton>
 
       <section className="mt-6">
-        <p className="text-sm text-text-muted mb-2">התורים של היום</p>
+        <p className="text-sm font-semibold text-text mb-2">📅 התורים של היום</p>
         {!todayAppointments || todayAppointments.length === 0 ? (
           <Card className="text-center text-sm text-text-muted py-6">
             אין תורים היום
           </Card>
         ) : (
           <div className="space-y-2">
-            {todayAppointments.map((appt) => (
-              <Link
-                key={appt.id}
-                href={`/appointments/${appt.id}`}
-                className="flex items-center gap-3 rounded-2xl border border-border-soft bg-surface p-3.5"
-              >
-                <div className="w-14 shrink-0 text-center text-sm font-medium text-accent-strong">
-                  {formatTime(appt.starts_at)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="truncate text-[15px] font-medium">
-                    {appt.client?.name}
-                  </p>
-                  <p className="truncate text-sm text-text-muted">
-                    {appt.treatment?.name ?? appt.treatment_name_freetext}
-                  </p>
-                </div>
-                <StatusBadge status={appt.status} />
-              </Link>
-            ))}
+            {todayAppointments.map((appt) => {
+              const style = getCategoryStyle(
+                appt.treatment?.category ?? "",
+              );
+              return (
+                <Link
+                  key={appt.id}
+                  href={`/appointments/${appt.id}`}
+                  className="card-interactive flex items-center gap-3 rounded-2xl border border-border-soft bg-surface p-3.5 shadow-sm shadow-black/[0.03]"
+                >
+                  <div
+                    className={cn(
+                      "w-14 shrink-0 rounded-xl py-1.5 text-center text-sm font-bold",
+                      style.bg,
+                      style.text,
+                    )}
+                  >
+                    {formatTime(appt.starts_at)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate text-[15px] font-semibold">
+                      {appt.client?.name}
+                    </p>
+                    <p className="truncate text-sm text-text-muted">
+                      <span aria-hidden>{style.emoji}</span>{" "}
+                      {appt.treatment?.name ?? appt.treatment_name_freetext}
+                    </p>
+                  </div>
+                  <StatusBadge status={appt.status} />
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>
 
       <section className="mt-6">
         <Card>
-          <CardTitle>הכנסות והוצאות החודש</CardTitle>
+          <CardTitle>💰 הכנסות והוצאות החודש</CardTitle>
           <div className="flex items-baseline justify-between">
             <span className="text-sm text-text-muted">רווח נקי</span>
-            <span className="text-2xl font-medium text-accent-strong">
+            <span className="text-2xl font-bold text-accent-strong">
               {formatCurrency(summary.profit)}
             </span>
           </div>
@@ -135,7 +148,7 @@ export default async function DashboardPage() {
 
       <section className="mt-3">
         <Card>
-          <CardTitle>הכנסה לשעת עבודה (החודש)</CardTitle>
+          <CardTitle>📊 הכנסה לשעת עבודה (החודש)</CardTitle>
           <div className="space-y-3">
             <HourBar
               label="ציפורניים"
@@ -155,7 +168,7 @@ export default async function DashboardPage() {
 
       <section className="mt-3">
         <Card>
-          <CardTitle>יעד שבועי — טיפולי פנים</CardTitle>
+          <CardTitle>🎯 יעד שבועי — טיפולי פנים</CardTitle>
           {goal ? (
             <>
               <div className="flex items-baseline justify-between mb-1">
@@ -190,8 +203,8 @@ export default async function DashboardPage() {
 
       <section className="mt-3 mb-6">
         <Card>
-          <CardTitle>שעות עבודה השבוע</CardTitle>
-          <p className="text-2xl font-medium">{minutesToHm(weeklyMinutes)}</p>
+          <CardTitle>⏱️ שעות עבודה השבוע</CardTitle>
+          <p className="text-2xl font-bold">{minutesToHm(weeklyMinutes)}</p>
           <p className="text-sm text-text-muted mt-1">
             סה&quot;כ שעות מתוכננות/בוצעו השבוע (כולל תורים עתידיים השבוע)
           </p>

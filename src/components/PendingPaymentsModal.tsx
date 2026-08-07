@@ -34,10 +34,10 @@ export function PendingPaymentsModal({ items }: { items: PendingItem[] }) {
   const preview = items.slice(0, 4);
 
   return (
-    <Modal open={open} onClose={close} title="תשלומים ממתינים">
+    <Modal open={open} onClose={close} title="⏳ תשלומים ממתינים">
       <p className="text-sm text-text-muted mb-3">
         יש לך {items.length} תשלומים ממתינים בסך{" "}
-        <span className="font-medium text-warning">{formatCurrency(total)}</span>
+        <span className="font-bold text-warning">{formatCurrency(total)}</span>
       </p>
 
       <div className="space-y-2 mb-4">
@@ -80,7 +80,7 @@ export function PendingPaymentsModal({ items }: { items: PendingItem[] }) {
         <Link
           href="/payments-pending"
           onClick={close}
-          className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-accent px-5 h-12 text-[15px] font-medium text-accent-foreground"
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl gradient-primary px-5 h-12 text-[15px] font-semibold text-accent-foreground shadow-md shadow-accent/25"
         >
           צפייה בהכל
         </Link>

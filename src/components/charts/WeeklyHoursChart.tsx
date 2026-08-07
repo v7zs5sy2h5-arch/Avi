@@ -16,12 +16,12 @@ export function WeeklyHoursChart({ data }: { data: WeeklyHoursPoint[] }) {
       <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
         <XAxis
           dataKey="label"
-          tick={{ fill: "#8a7a68", fontSize: 12 }}
-          axisLine={{ stroke: "#d9cfc2" }}
+          tick={{ fill: "#6b5847", fontSize: 12, fontWeight: 600 }}
+          axisLine={{ stroke: "#eeddc7" }}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: "#8a7a68", fontSize: 11 }}
+          tick={{ fill: "#6b5847", fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           width={32}
@@ -29,8 +29,8 @@ export function WeeklyHoursChart({ data }: { data: WeeklyHoursPoint[] }) {
         <Tooltip
           formatter={(value) => `${value} שעות`}
           contentStyle={{
-            background: "#f2e9dd",
-            border: "1px solid #d9cfc2",
+            background: "#ffffff",
+            border: "1px solid #eeddc7",
             borderRadius: 12,
             fontSize: 13,
           }}
@@ -38,10 +38,10 @@ export function WeeklyHoursChart({ data }: { data: WeeklyHoursPoint[] }) {
         <Line
           type="monotone"
           dataKey="hours"
-          name="שעות עבודה"
-          stroke="#b08968"
-          strokeWidth={2.5}
-          dot={{ fill: "#b08968", r: 3 }}
+          name="⏱️ שעות עבודה"
+          stroke="#a34f2b"
+          strokeWidth={3}
+          dot={{ fill: "#a34f2b", r: 3.5 }}
         />
       </LineChart>
     </ResponsiveContainer>
