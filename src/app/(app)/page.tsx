@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Clock, Sparkles } from "lucide-react";
 import { PendingPaymentsModal } from "@/components/PendingPaymentsModal";
 import { getPendingPayments } from "@/lib/payments";
 import {
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
     { data: todayAppointments },
     pendingItems,
     summary,
+    todaySummary,
     perHour,
     weeklyMinutes,
     facialsProgress,
@@ -52,6 +54,7 @@ export default async function DashboardPage() {
       .returns<AppointmentWithRelations[]>(),
     getPendingPayments(supabase),
     getMonthlySummary(supabase, monthStart, monthEnd),
+    getMonthlySummary(supabase, todayStart, todayEnd),
     getIncomePerHourByCategory(supabase, monthStart, monthEnd),
     getWeeklyPlannedMinutes(supabase, wStart, wEnd),
     getFacialsWeekProgress(supabase, wStart, wEnd),
@@ -63,6 +66,40 @@ export default async function DashboardPage() {
       .eq("week_start", isoDate(wStart))
       .maybeSingle<WeeklyGoal>(),
   ]);
+
+  const todayList = todayAppointments ?? [];
+  const activeAppt = todayList.find((a) => {
+    if (a.status !== "planned") return false;
+    const s = new Date(a.starts_at).getTime();
+    const e = s + a.duration_minutes * 60000;
+    return now.getTime() >= s && now.getTime() < e;
+  });
+  const nextAppt = todayList.find(
+    (a) => a.status === "planned" && new Date(a.starts_at).getTime() > now.getTime(),
+  );
+  const completedTodayCount = todayList.filter((a) => a.status === "completed").length;
+  const remainingTodayCount = todayList.filter(
+    (a) => a.status === "planned" && new Date(a.starts_at).getTime() >= now.getTime(),
+  ).length;
+
+  let nowActionText: string;
+  if (activeAppt) {
+    nowActionText = "🟢 באמצע טיפול כרגע — תתמקדי בלקוחה, השאר יחכה";
+  } else if (nextAppt) {
+    const minutesUntil = Math.round(
+      (new Date(nextAppt.starts_at).getTime() - now.getTime()) / 60000,
+    );
+    nowActionText =
+      minutesUntil <= 15
+        ? `⏰ התור הבא מתחיל בעוד ${minutesUntil} דק' — כדאי להתכונן`
+        : minutesUntil < 120
+          ? `🕒 יש לך כ-${Math.round(minutesUntil / 60) || 1} שעות פנויות עד התור הבא`
+          : "🌿 יש לך זמן פנוי עד התור הבא — הזדמנות טובה לחזור ללקוחות ממתינות או לתכנן קדימה";
+  } else if (todayList.length > 0) {
+    nowActionText = "🎉 סיימת את כל התורים של היום! זמן טוב לבדוק תשלומים ממתינים או לתכנן מחר";
+  } else {
+    nowActionText = "🌱 אין תורים היום — יום פנוי לתכנון, שיווק או מנוחה";
+  }
 
   const nailsStat = perHour.find((s) => s.category === NAILS_CATEGORY);
   const facialsStat = perHour.find((s) => s.category === FACIALS_CATEGORY);
@@ -92,12 +129,87 @@ export default async function DashboardPage() {
         <Image src="/logo-mark.png" alt="" width={24} height={34} />
       </header>
 
-      <LinkButton href="/appointments/new" size="lg" className="w-full mt-2">
+      <section className="mt-2">
+        <div className="rounded-3xl gradient-header border border-accent-soft p-4 shadow-sm shadow-black/[0.04]">
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-accent-strong">
+              <Sparkles size={16} /> תמונת מצב — עכשיו
+            </p>
+            <p className="text-sm font-semibold text-text-muted">
+              {now.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          </div>
+
+          {activeAppt || nextAppt ? (
+            (() => {
+              const appt = (activeAppt ?? nextAppt)!;
+              const style = getCategoryStyle(appt.treatment?.category ?? "");
+              const emoji = getTreatmentEmoji(
+                appt.treatment?.name ?? appt.treatment_name_freetext,
+                appt.treatment?.category ?? "",
+              );
+              return (
+                <Link
+                  href={`/appointments/${appt.id}`}
+                  className="card-interactive mt-3 flex items-center gap-3 rounded-2xl bg-surface p-3 shadow-sm shadow-black/[0.03]"
+                >
+                  <div
+                    className={cn(
+                      "flex w-14 shrink-0 flex-col items-center justify-center rounded-xl py-1.5",
+                      style.bg,
+                      style.text,
+                    )}
+                  >
+                    <Clock size={14} className="mb-0.5" />
+                    <span className="text-sm font-bold">{formatTime(appt.starts_at)}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold text-accent-strong">
+                      {activeAppt ? "🟢 עכשיו אצלך" : "⏭️ הלקוחה הבאה"}
+                    </p>
+                    <p className="truncate text-[15px] font-semibold">{appt.client?.name}</p>
+                    <p className="truncate text-sm text-text-muted">
+                      <span aria-hidden>{emoji}</span>{" "}
+                      {appt.treatment?.name ?? appt.treatment_name_freetext}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })()
+          ) : (
+            <p className="mt-3 rounded-2xl bg-surface p-3 text-center text-sm text-text-muted shadow-sm shadow-black/[0.03]">
+              {todayList.length > 0 ? "אין עוד תורים היום 🎉" : "אין תורים היום 🌱"}
+            </p>
+          )}
+
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="rounded-xl bg-surface p-2.5 text-center shadow-sm shadow-black/[0.03]">
+              <p className="text-lg font-bold text-success">{completedTodayCount}</p>
+              <p className="text-[11px] text-text-muted">בוצעו היום</p>
+            </div>
+            <div className="rounded-xl bg-surface p-2.5 text-center shadow-sm shadow-black/[0.03]">
+              <p className="text-lg font-bold text-accent-strong">{remainingTodayCount}</p>
+              <p className="text-[11px] text-text-muted">נותרו היום</p>
+            </div>
+          </div>
+
+          <p className="mt-3 text-sm font-medium">{nowActionText}</p>
+
+          <div className="mt-3 flex items-center justify-between rounded-2xl bg-surface p-3 shadow-sm shadow-black/[0.03]">
+            <span className="text-sm text-text-muted">💰 הכנסות היום</span>
+            <span className="text-lg font-bold text-accent-strong">
+              {formatCurrency(todaySummary.totalIncome)}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <LinkButton href="/appointments/new" size="lg" className="w-full mt-4">
         + קביעת תור חדש
       </LinkButton>
 
       <section className="mt-6">
-        <p className="text-sm font-semibold text-text mb-2">📅 התורים של היום</p>
+        <p className="text-sm font-semibold text-text mb-2">📅 כל התורים של היום</p>
         {!todayAppointments || todayAppointments.length === 0 ? (
           <Card className="text-center text-sm text-text-muted py-6">
             אין תורים היום

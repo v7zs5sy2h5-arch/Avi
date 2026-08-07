@@ -7,6 +7,7 @@ import { formatTime, formatCurrency, cn } from "@/lib/utils";
 import { getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ChevronRight, ChevronLeft, Clock } from "lucide-react";
+import { NAILS_CATEGORY, FACIALS_CATEGORY } from "@/types/database";
 import type { AppointmentWithRelations } from "@/types/database";
 
 const BUSY_THRESHOLD_MINUTES = 6 * 60;
@@ -15,7 +16,13 @@ const ROW_HEIGHT = 48;
 const HEADER_HEIGHT = 44;
 const COL_WIDTH = 68;
 const MIN_BLOCK_HEIGHT = 22;
-type ViewMode = "day" | "week";
+type ViewMode = "day" | "week" | "month";
+
+function dotClass(category: string): string {
+  if (category === NAILS_CATEGORY) return "bg-nails";
+  if (category === FACIALS_CATEGORY) return "bg-facials";
+  return "bg-accent";
+}
 
 export default async function CalendarPage({
   searchParams,
@@ -23,14 +30,32 @@ export default async function CalendarPage({
   searchParams: Promise<{ date?: string; view?: string }>;
 }) {
   const params = await searchParams;
-  const view: ViewMode = params.view === "week" ? "week" : "day";
+  const view: ViewMode =
+    params.view === "week" ? "week" : params.view === "month" ? "month" : "day";
   const anchor = params.date ? new Date(params.date) : new Date();
   const selected = params.date ?? isoDate(new Date());
-  const start = weekStart(anchor);
-  const days = Array.from({ length: 7 }, (_, i) => addDays(start, i));
-  const rangeStart = days[0];
-  const rangeEnd = addDays(days[6], 1);
+  const weekStartDate = weekStart(anchor);
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
   const todayKey = isoDate(new Date());
+  const currentMonth = anchor.getMonth();
+
+  let rangeStart: Date;
+  let rangeEnd: Date;
+  const monthWeeks: Date[][] = [];
+  if (view === "month") {
+    const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    const gridStart = weekStart(monthStart);
+    const lastDayOfMonth = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+    const gridEnd = addDays(weekStart(lastDayOfMonth), 7);
+    rangeStart = gridStart;
+    rangeEnd = gridEnd;
+    for (let cursor = gridStart; cursor < gridEnd; cursor = addDays(cursor, 7)) {
+      monthWeeks.push(Array.from({ length: 7 }, (_, i) => addDays(cursor, i)));
+    }
+  } else {
+    rangeStart = days[0];
+    rangeEnd = addDays(days[6], 1);
+  }
 
   const supabase = await createClient();
   const { data: appointments } = await supabase
@@ -40,23 +65,25 @@ export default async function CalendarPage({
     .lt("starts_at", rangeEnd.toISOString())
     .order("starts_at");
 
-  const weekAppointments = (appointments ?? []) as AppointmentWithRelations[];
+  const rangeAppointments = (appointments ?? []) as AppointmentWithRelations[];
 
   const byDay = new Map<string, AppointmentWithRelations[]>();
   const minutesByDay = new Map<string, number>();
   let minHour = 8;
   let maxHour = 20;
-  for (const appt of weekAppointments) {
+  for (const appt of rangeAppointments) {
     const key = isoDate(new Date(appt.starts_at));
     byDay.set(key, [...(byDay.get(key) ?? []), appt]);
     if (appt.status === "planned" || appt.status === "completed") {
       minutesByDay.set(key, (minutesByDay.get(key) ?? 0) + appt.duration_minutes);
     }
-    const s = new Date(appt.starts_at);
-    const startHour = s.getHours() + s.getMinutes() / 60;
-    const endHour = startHour + appt.duration_minutes / 60;
-    minHour = Math.min(minHour, Math.floor(startHour));
-    maxHour = Math.max(maxHour, Math.ceil(endHour));
+    if (view !== "month") {
+      const s = new Date(appt.starts_at);
+      const startHour = s.getHours() + s.getMinutes() / 60;
+      const endHour = startHour + appt.duration_minutes / 60;
+      minHour = Math.min(minHour, Math.floor(startHour));
+      maxHour = Math.max(maxHour, Math.ceil(endHour));
+    }
   }
   const hours = Array.from({ length: maxHour - minHour }, (_, i) => minHour + i);
 
@@ -64,8 +91,26 @@ export default async function CalendarPage({
     (a, b) => +new Date(a.starts_at) - +new Date(b.starts_at),
   );
 
-  const prevWeek = isoDate(addDays(start, -7));
-  const nextWeek = isoDate(addDays(start, 7));
+  const prevWeek = isoDate(addDays(weekStartDate, -7));
+  const nextWeek = isoDate(addDays(weekStartDate, 7));
+  const monthAnchor = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+  const prevMonth = isoDate(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() - 1, 1));
+  const nextMonth = isoDate(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 1));
+
+  const navPrevHref =
+    view === "month" ? `/calendar?date=${prevMonth}&view=month` : `/calendar?date=${prevWeek}&view=${view}`;
+  const navNextHref =
+    view === "month" ? `/calendar?date=${nextMonth}&view=month` : `/calendar?date=${nextWeek}&view=${view}`;
+  const navLabel =
+    view === "month" ? (
+      monthAnchor.toLocaleDateString("he-IL", { month: "long", year: "numeric" })
+    ) : (
+      <>
+        {days[0].toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" })}
+        {" – "}
+        {days[6].toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" })}
+      </>
+    );
 
   const now = new Date();
   const nowHour = now.getHours() + now.getMinutes() / 60;
@@ -81,23 +126,11 @@ export default async function CalendarPage({
       <Header title="יומן 📅" />
 
       <div className="flex items-center justify-between px-4 pt-3">
-        <Link
-          href={`/calendar?date=${prevWeek}&view=${view}`}
-          className="p-2 text-text-muted"
-          aria-label="שבוע קודם"
-        >
+        <Link href={navPrevHref} className="p-2 text-text-muted" aria-label="קודם">
           <ChevronRight size={20} />
         </Link>
-        <p className="text-sm font-semibold text-text">
-          {days[0].toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" })}
-          {" – "}
-          {days[6].toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" })}
-        </p>
-        <Link
-          href={`/calendar?date=${nextWeek}&view=${view}`}
-          className="p-2 text-text-muted"
-          aria-label="שבוע הבא"
-        >
+        <p className="text-sm font-semibold text-text">{navLabel}</p>
+        <Link href={navNextHref} className="p-2 text-text-muted" aria-label="הבא">
           <ChevronLeft size={20} />
         </Link>
       </div>
@@ -107,6 +140,7 @@ export default async function CalendarPage({
           [
             { value: "day", label: "יומי" },
             { value: "week", label: "שבועי" },
+            { value: "month", label: "חודשי" },
           ] as const
         ).map((tab) => (
           <Link
@@ -179,7 +213,7 @@ export default async function CalendarPage({
             )}
           </div>
         </>
-      ) : (
+      ) : view === "week" ? (
         <div className="flex px-4 pb-6 pt-3">
           <div className="shrink-0" style={{ width: 30 }}>
             <div style={{ height: HEADER_HEIGHT }} />
@@ -214,10 +248,7 @@ export default async function CalendarPage({
                       <span className="text-[10px] opacity-80">{WEEKDAY_LABELS[i]}</span>
                       <span className="text-sm font-bold">{day.getDate()}</span>
                     </Link>
-                    <div
-                      className="relative"
-                      style={{ height: hours.length * ROW_HEIGHT }}
-                    >
+                    <div className="relative" style={{ height: hours.length * ROW_HEIGHT }}>
                       {hours.map((h, hi) => (
                         <div
                           key={h}
@@ -270,6 +301,63 @@ export default async function CalendarPage({
                 );
               })}
             </div>
+          </div>
+        </div>
+      ) : (
+        <div className="px-4 pb-6 pt-3">
+          <div className="grid grid-cols-7 gap-1 mb-1">
+            {WEEKDAY_LABELS.map((label) => (
+              <div key={label} className="text-center text-[11px] text-text-muted">
+                {label}
+              </div>
+            ))}
+          </div>
+          <div className="space-y-1">
+            {monthWeeks.map((week, wi) => (
+              <div key={wi} className="grid grid-cols-7 gap-1">
+                {week.map((day) => {
+                  const key = isoDate(day);
+                  const isToday = key === todayKey;
+                  const inMonth = day.getMonth() === currentMonth;
+                  const list = byDay.get(key) ?? [];
+                  const categories = Array.from(
+                    new Set(list.map((a) => a.treatment?.category ?? "אחר")),
+                  ).slice(0, 4);
+                  return (
+                    <Link
+                      key={key}
+                      href={`/calendar?date=${key}&view=day`}
+                      className={cn(
+                        "flex flex-col items-center gap-1 rounded-xl py-1.5 transition-colors",
+                        isToday
+                          ? "gradient-primary text-accent-foreground shadow-sm shadow-accent/25"
+                          : "hover:bg-surface-soft",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "text-sm font-semibold",
+                          !inMonth && !isToday ? "text-text-muted/40" : "",
+                        )}
+                      >
+                        {day.getDate()}
+                      </span>
+                      <span className="flex h-1.5 items-center gap-0.5">
+                        {categories.map((c, ci) => (
+                          <span
+                            key={ci}
+                            className={cn(
+                              "h-1.5 w-1.5 rounded-full",
+                              isToday ? "bg-accent-foreground" : dotClass(c),
+                            )}
+                          />
+                        ))}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
       )}
