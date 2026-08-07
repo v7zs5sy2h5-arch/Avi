@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+:root {
+  --color-bg: #f2e9dd;
+  --color-surface: #e8d5c4;
+  --color-surface-soft: #ede1d2;
+  --color-text: #4a3f35;
+  --color-text-muted: #8a7a68;
+  --color-border: #d9cfc2;
+  --color-border-soft: #e3d8c9;
+  --color-accent: #b08968;
+  --color-accent-strong: #96694a;
+  --color-accent-foreground: #fdf8f2;
+  --color-success: #5b6b3d;
+  --color-success-bg: #e3e6d5;
+  --color-warning: #8b4a3a;
+  --color-warning-bg: #f0ddd6;
+  --color-nails: #cbb6a2;
+  --color-facials: #96694a;
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-surface-soft: var(--color-surface-soft);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-border: var(--color-border);
+  --color-border-soft: var(--color-border-soft);
+  --color-accent: var(--color-accent);
+  --color-accent-strong: var(--color-accent-strong);
+  --color-accent-foreground: var(--color-accent-foreground);
+  --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-nails: var(--color-nails);
+  --color-facials: var(--color-facials);
+  --font-heading: var(--font-assistant);
+  --font-body: var(--font-assistant);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body), "Segoe UI", sans-serif;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+.font-heading {
+  font-family: var(--font-heading), sans-serif;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 999px;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+}
