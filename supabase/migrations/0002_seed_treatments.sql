@@ -14,6 +14,11 @@ begin
     raise exception 'No auth.users row found for email %; create the user first (see README).', user_email;
   end if;
 
+  if exists (select 1 from public.treatments where user_id = target_user) then
+    raise notice 'User % already has treatments — skipping seed to avoid duplicates.', user_email;
+    return;
+  end if;
+
   insert into public.treatments (user_id, category, name, description, price, price_note, duration_minutes, is_series, series_size, series_price, sort_order)
   values
     (target_user, 'ציפורניים', 'מריחת לק', null, 150, null, 45, false, null, null, 1),

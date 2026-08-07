@@ -27,12 +27,16 @@ create table if not exists public.treatments (
 
 alter table public.treatments enable row level security;
 
+drop policy if exists "treatments_select_own" on public.treatments;
 create policy "treatments_select_own" on public.treatments
   for select using (auth.uid() = user_id);
+drop policy if exists "treatments_insert_own" on public.treatments;
 create policy "treatments_insert_own" on public.treatments
   for insert with check (auth.uid() = user_id);
+drop policy if exists "treatments_update_own" on public.treatments;
 create policy "treatments_update_own" on public.treatments
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "treatments_delete_own" on public.treatments;
 create policy "treatments_delete_own" on public.treatments
   for delete using (auth.uid() = user_id);
 
@@ -50,12 +54,16 @@ create table if not exists public.clients (
 
 alter table public.clients enable row level security;
 
+drop policy if exists "clients_select_own" on public.clients;
 create policy "clients_select_own" on public.clients
   for select using (auth.uid() = user_id);
+drop policy if exists "clients_insert_own" on public.clients;
 create policy "clients_insert_own" on public.clients
   for insert with check (auth.uid() = user_id);
+drop policy if exists "clients_update_own" on public.clients;
 create policy "clients_update_own" on public.clients
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "clients_delete_own" on public.clients;
 create policy "clients_delete_own" on public.clients
   for delete using (auth.uid() = user_id);
 
@@ -84,12 +92,16 @@ create table if not exists public.appointments (
 
 alter table public.appointments enable row level security;
 
+drop policy if exists "appointments_select_own" on public.appointments;
 create policy "appointments_select_own" on public.appointments
   for select using (auth.uid() = user_id);
+drop policy if exists "appointments_insert_own" on public.appointments;
 create policy "appointments_insert_own" on public.appointments
   for insert with check (auth.uid() = user_id);
+drop policy if exists "appointments_update_own" on public.appointments;
 create policy "appointments_update_own" on public.appointments
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "appointments_delete_own" on public.appointments;
 create policy "appointments_delete_own" on public.appointments
   for delete using (auth.uid() = user_id);
 
@@ -121,6 +133,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists appointments_overlap_check on public.appointments;
 create trigger appointments_overlap_check
   before insert or update on public.appointments
   for each row
@@ -151,12 +164,16 @@ create table if not exists public.treatment_log (
 
 alter table public.treatment_log enable row level security;
 
+drop policy if exists "treatment_log_select_own" on public.treatment_log;
 create policy "treatment_log_select_own" on public.treatment_log
   for select using (auth.uid() = user_id);
+drop policy if exists "treatment_log_insert_own" on public.treatment_log;
 create policy "treatment_log_insert_own" on public.treatment_log
   for insert with check (auth.uid() = user_id);
+drop policy if exists "treatment_log_update_own" on public.treatment_log;
 create policy "treatment_log_update_own" on public.treatment_log
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "treatment_log_delete_own" on public.treatment_log;
 create policy "treatment_log_delete_own" on public.treatment_log
   for delete using (auth.uid() = user_id);
 
@@ -180,12 +197,16 @@ create table if not exists public.product_sales (
 
 alter table public.product_sales enable row level security;
 
+drop policy if exists "product_sales_select_own" on public.product_sales;
 create policy "product_sales_select_own" on public.product_sales
   for select using (auth.uid() = user_id);
+drop policy if exists "product_sales_insert_own" on public.product_sales;
 create policy "product_sales_insert_own" on public.product_sales
   for insert with check (auth.uid() = user_id);
+drop policy if exists "product_sales_update_own" on public.product_sales;
 create policy "product_sales_update_own" on public.product_sales
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "product_sales_delete_own" on public.product_sales;
 create policy "product_sales_delete_own" on public.product_sales
   for delete using (auth.uid() = user_id);
 
@@ -205,12 +226,16 @@ create table if not exists public.expense_categories (
 
 alter table public.expense_categories enable row level security;
 
+drop policy if exists "expense_categories_select_own" on public.expense_categories;
 create policy "expense_categories_select_own" on public.expense_categories
   for select using (auth.uid() = user_id);
+drop policy if exists "expense_categories_insert_own" on public.expense_categories;
 create policy "expense_categories_insert_own" on public.expense_categories
   for insert with check (auth.uid() = user_id);
+drop policy if exists "expense_categories_update_own" on public.expense_categories;
 create policy "expense_categories_update_own" on public.expense_categories
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "expense_categories_delete_own" on public.expense_categories;
 create policy "expense_categories_delete_own" on public.expense_categories
   for delete using (auth.uid() = user_id);
 
@@ -230,12 +255,16 @@ create table if not exists public.expenses (
 
 alter table public.expenses enable row level security;
 
+drop policy if exists "expenses_select_own" on public.expenses;
 create policy "expenses_select_own" on public.expenses
   for select using (auth.uid() = user_id);
+drop policy if exists "expenses_insert_own" on public.expenses;
 create policy "expenses_insert_own" on public.expenses
   for insert with check (auth.uid() = user_id);
+drop policy if exists "expenses_update_own" on public.expenses;
 create policy "expenses_update_own" on public.expenses
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "expenses_delete_own" on public.expenses;
 create policy "expenses_delete_own" on public.expenses
   for delete using (auth.uid() = user_id);
 
@@ -256,11 +285,15 @@ create table if not exists public.weekly_goals (
 
 alter table public.weekly_goals enable row level security;
 
+drop policy if exists "weekly_goals_select_own" on public.weekly_goals;
 create policy "weekly_goals_select_own" on public.weekly_goals
   for select using (auth.uid() = user_id);
+drop policy if exists "weekly_goals_insert_own" on public.weekly_goals;
 create policy "weekly_goals_insert_own" on public.weekly_goals
   for insert with check (auth.uid() = user_id);
+drop policy if exists "weekly_goals_update_own" on public.weekly_goals;
 create policy "weekly_goals_update_own" on public.weekly_goals
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "weekly_goals_delete_own" on public.weekly_goals;
 create policy "weekly_goals_delete_own" on public.weekly_goals
   for delete using (auth.uid() = user_id);
