@@ -1,0 +1,48 @@
+name: Setup Supabase Database
+
+# Manually-triggered, one-time setup: runs the schema migration and seeds
+# the initial price list / expense categories against a real Supabase
+# project. Requires a repo secret SUPABASE_DB_URL (the database's
+# "Connection pooling" URI from Supabase Project Settings -> Database,
+# with the real password substituted in) and the login email of a user
+# already created in Supabase Authentication -> Users.
+
+on:
+  workflow_dispatch:
+    inputs:
+      login_email:
+        description: "האימייל של המשתמשת שיצרת ב-Supabase (Authentication -> Users)"
+        required: true
+        type: string
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+
+      - name: Run schema migration (0001_init.sql)
+        run: |
+          set -euo pipefail
+          psql "${SUPABASE_DB_URL}" -v ON_ERROR_STOP=1 -f supabase/migrations/0001_init.sql
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+
+      - name: Seed treatments and expense categories (0002_seed_treatments.sql)
+        run: |
+          set -euo pipefail
+          sed "s|REPLACE_WITH_LOGIN_EMAIL|${LOGIN_EMAIL}|" \
+            supabase/migrations/0002_seed_treatments.sql > /tmp/seed.sql
+          psql "${SUPABASE_DB_URL}" -v ON_ERROR_STOP=1 -f /tmp/seed.sql
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          LOGIN_EMAIL: ${{ inputs.login_email }}
+
+      - name: Done
+        run: echo "Supabase setup complete for ${{ inputs.login_email }}"
