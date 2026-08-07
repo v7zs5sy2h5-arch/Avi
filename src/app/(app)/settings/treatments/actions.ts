@@ -24,6 +24,7 @@ export async function createTreatment(formData: FormData) {
     user_id: user.id,
     category: strOrNull(formData.get("category")) ?? "אחר",
     name: strOrNull(formData.get("name")) ?? "טיפול חדש",
+    description: strOrNull(formData.get("description")),
     price: numOrNull(formData.get("price")),
     price_note: strOrNull(formData.get("price_note")),
     duration_minutes: numOrNull(formData.get("duration_minutes")),
@@ -48,6 +49,7 @@ export async function updateTreatment(id: string, formData: FormData) {
     .update({
       category: strOrNull(formData.get("category")) ?? "אחר",
       name: strOrNull(formData.get("name")) ?? "טיפול",
+      description: strOrNull(formData.get("description")),
       price: numOrNull(formData.get("price")),
       price_note: strOrNull(formData.get("price_note")),
       duration_minutes: numOrNull(formData.get("duration_minutes")),

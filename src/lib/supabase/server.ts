@@ -1,7 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { createLocalClient } from "@/lib/local/client";
 
-export async function createClient() {
+export async function createClient(): Promise<SupabaseClient> {
+  if (process.env.LOCAL_MODE === "true") {
+    return createLocalClient() as unknown as SupabaseClient;
+  }
+
   const cookieStore = await cookies();
 
   return createServerClient(

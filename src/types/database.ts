@@ -6,6 +6,7 @@ export interface Treatment {
   user_id: string;
   category: string;
   name: string;
+  description: string | null;
   price: number | null;
   price_note: string | null;
   duration_minutes: number | null;

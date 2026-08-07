@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   title: "Keren Amar | ניהול תורים",
   description: "מערכת ניהול תורים ותזרים - Keren Amar Professional Cosmetics",
   icons: {
-    icon: "/favicon.svg",
-    apple: "/favicon.svg",
+    icon: "/favicon.png",
+    apple: "/favicon.png",
   },
   manifest: "/manifest.json",
 };

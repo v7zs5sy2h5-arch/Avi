@@ -68,7 +68,7 @@ export default async function DashboardPage() {
     <div className="px-4">
       <header className="flex items-center justify-between pt-4 pb-2">
         <h1 className="font-heading text-xl">שלום קרן</h1>
-        <Image src="/logo-mark.svg" alt="" width={34} height={34} />
+        <Image src="/logo-mark.png" alt="" width={24} height={34} />
       </header>
 
       <LinkButton href="/appointments/new" size="lg" className="w-full mt-2">

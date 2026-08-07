@@ -15,6 +15,7 @@ create table if not exists public.treatments (
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   category text not null,
   name text not null,
+  description text,
   price numeric(10,2),
   price_note text,
   duration_minutes integer,

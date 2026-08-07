@@ -1,7 +1,25 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { hasLocalSession } from "@/lib/local/proxyAuth";
 
 export async function updateSession(request: NextRequest) {
+  if (process.env.LOCAL_MODE === "true") {
+    const isAuthRoute = request.nextUrl.pathname.startsWith("/login");
+    const authed = hasLocalSession(request);
+
+    if (!authed && !isAuthRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+    if (authed && isAuthRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

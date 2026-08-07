@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input, Label, Checkbox } from "@/components/ui/Field";
+import { Input, Label, Checkbox, Textarea } from "@/components/ui/Field";
 import { formatCurrency } from "@/lib/utils";
 import { updateTreatment, deleteTreatment } from "./actions";
 import type { Treatment } from "@/types/database";
@@ -49,6 +49,16 @@ export function TreatmentRow({ treatment }: { treatment: Treatment }) {
         <div>
           <Label htmlFor={`name-${treatment.id}`}>שם הטיפול</Label>
           <Input id={`name-${treatment.id}`} name="name" defaultValue={treatment.name} required />
+        </div>
+        <div>
+          <Label htmlFor={`description-${treatment.id}`}>
+            תיאור מורחב (אופציונלי — לא מוצג בכרטיסיות הבחירה)
+          </Label>
+          <Textarea
+            id={`description-${treatment.id}`}
+            name="description"
+            defaultValue={treatment.description ?? ""}
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

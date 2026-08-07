@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input, Label, Checkbox } from "@/components/ui/Field";
+import { Input, Label, Checkbox, Textarea } from "@/components/ui/Field";
 import { createTreatment } from "./actions";
 
 export function AddTreatmentForm({ categories }: { categories: string[] }) {
@@ -54,6 +54,12 @@ export function AddTreatmentForm({ categories }: { categories: string[] }) {
         <div>
           <Label htmlFor="new-name">שם הטיפול</Label>
           <Input id="new-name" name="name" required />
+        </div>
+        <div>
+          <Label htmlFor="new-description">
+            תיאור מורחב (אופציונלי — לא מוצג בכרטיסיות הבחירה)
+          </Label>
+          <Textarea id="new-description" name="description" />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>

@@ -3,6 +3,27 @@
 מערכת ניהול תורים, לקוחות והכנסות לעסק קוסמטיקה עצמאי — Next.js (App
 Router) + TypeScript + Tailwind CSS + Supabase.
 
+## תצוגה מקדימה מקומית (בלי Supabase אמיתי)
+
+לצורך בדיקה מהירה של המסכים והזרימות לפני הקמת Supabase, יש מצב תצוגה
+מקדימה שרץ מול נתונים בזיכרון בלבד (client/treatments/appointments/
+תשלומים/הוצאות לדוגמה) — בלי צורך בפרויקט Supabase או משתני סביבה
+אמיתיים:
+
+```bash
+npm install
+LOCAL_MODE=true npm run dev
+```
+
+(או: להוסיף `LOCAL_MODE=true` לקובץ `.env.local` ואז פשוט `npm run dev`)
+
+פותחים [http://localhost:3000](http://localhost:3000) — מסך ההתחברות
+מקבל **כל אימייל/סיסמה** (למשל `demo@test.com` / `123456`). כל הפעולות
+עובדות באמת (יצירת תור, סימון כהושלם, חסימת תורים חופפים וכו'), אבל
+הנתונים **לא נשמרים לצמיתות** — הם מתאפסים בכל הפעלה מחדש של שרת
+הפיתוח. ברגע שהתצוגה המקדימה מאושרת, יש להסיר את `LOCAL_MODE` (או
+להגדיר `LOCAL_MODE=false`) ולהמשיך להקמת Supabase האמיתי למטה.
+
 ## הקמת Supabase
 
 1. **יצירת פרויקט** — בכתובת [supabase.com](https://supabase.com) יוצרים
@@ -44,19 +65,21 @@ npm run dev
 את אותם משתני הסביבה (`NEXT_PUBLIC_SUPABASE_URL`,
 `NEXT_PUBLIC_SUPABASE_ANON_KEY`) בהגדרות הפרויקט בשירות הפריסה.
 
-## הלוגו — פעולה נדרשת
+## הלוגו
 
-בקבצי `public/logo-mark.svg`, `public/logo-full.svg` ו-`public/favicon.svg`
-יש כרגע **לוגו זמני** (מונוגרמה "ka" בפונט קורסיבי גנרי) — קובץ הלוגו
-המקורי (PNG/SVG) לא צורף לשיחה שממנה נבנתה המערכת. יש להחליף את שלושת
-הקבצים בלוגו הרשמי:
+הלוגו הרשמי חולץ מקובץ ה-PDF שסופק וגזור לשלושה קבצים ב-`public/`:
 
-- `public/logo-full.svg` — הלוגו המלא עם השם "KEREN AMAR" והתגית,
+- `public/logo-full.png` — הלוגו המלא (מונוגרמה + "KEREN AMAR" + התגית),
   מוצג במסך ההתחברות.
-- `public/logo-mark.svg` — המונוגרמה "ka" בלבד, מוצגת בהדר של כל המסכים.
-- `public/favicon.svg` — גרסה ריבועית קומפקטית של המונוגרמה, לטאב
-  הדפדפן ולאייקון PWA (ניתן גם קובץ PNG — יש לעדכן את ההפניה
-  ב-`src/app/layout.tsx` ו-`public/manifest.json` בהתאם).
+- `public/logo-mark.png` — המונוגרמה "ka" בלבד, מוצגת בהדר של כל המסכים.
+- `public/favicon.png` — גרסה ריבועית עם רקע בז' של המערכת, לטאב הדפדפן
+  ולאייקון PWA.
+
+אם בעתיד יתקבל קובץ וקטורי (SVG/AI) מקורי מהמעצבת, אפשר להחליף את
+שלושת הקבצים באיכות וקטורית מלאה — יש רק לעדכן את הסיומת בהפניות
+ב-`src/app/layout.tsx`, `src/app/login/page.tsx`,
+`src/components/layout/Header.tsx`, `src/app/(app)/page.tsx`
+ו-`public/manifest.json` אם משנים סיומת קובץ.
 
 ## מבנה הנתונים
 
