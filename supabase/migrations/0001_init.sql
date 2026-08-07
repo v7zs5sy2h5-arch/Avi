@@ -5,7 +5,6 @@
 -- but modeled correctly for future multi-user use).
 
 create extension if not exists pgcrypto;
-create extension if not exists btree_gist;
 
 -- ---------------------------------------------------------------------
 -- treatments (מחירון)
@@ -80,9 +79,6 @@ create table if not exists public.appointments (
   -- set when this appointment was booked as a follow-up/series appointment
   -- suggested at the completion of another appointment (face-to-face moment)
   follow_up_of_appointment_id uuid references public.appointments(id) on delete set null,
-  time_range tstzrange generated always as (
-    tstzrange(starts_at, starts_at + make_interval(mins => duration_minutes), '[)')
-  ) stored,
   created_at timestamptz not null default now()
 );
 
@@ -97,16 +93,38 @@ create policy "appointments_update_own" on public.appointments
 create policy "appointments_delete_own" on public.appointments
   for delete using (auth.uid() = user_id);
 
--- Hard block on double-booking the exact same overlapping slot (typo
--- protection). Only "planned"/"completed" appointments occupy the calendar;
--- cancelled / no-show appointments free up the slot.
-alter table public.appointments
-  add constraint appointments_no_overlap
-  exclude using gist (
-    user_id with =,
-    time_range with &&
-  )
-  where (status in ('planned', 'completed'));
+-- Hard block on double-booking an overlapping slot (typo protection). Only
+-- "planned"/"completed" appointments occupy the calendar; cancelled /
+-- no-show appointments free up the slot. Implemented as a trigger (rather
+-- than a generated tstzrange column + EXCLUDE constraint) because
+-- `timestamptz + interval` is STABLE, not IMMUTABLE, in Postgres, so it
+-- can't be used in a generated column or index expression.
+create or replace function public.check_appointment_overlap()
+returns trigger as $$
+begin
+  if new.status not in ('planned', 'completed') then
+    return new;
+  end if;
+
+  if exists (
+    select 1 from public.appointments a
+    where a.user_id = new.user_id
+      and a.id <> new.id
+      and a.status in ('planned', 'completed')
+      and a.starts_at < new.starts_at + (new.duration_minutes * interval '1 minute')
+      and new.starts_at < a.starts_at + (a.duration_minutes * interval '1 minute')
+  ) then
+    raise exception 'Overlapping appointment' using errcode = '23P01';
+  end if;
+
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger appointments_overlap_check
+  before insert or update on public.appointments
+  for each row
+  execute function public.check_appointment_overlap();
 
 create index if not exists appointments_user_starts_idx on public.appointments (user_id, starts_at);
 create index if not exists appointments_client_idx on public.appointments (client_id);
