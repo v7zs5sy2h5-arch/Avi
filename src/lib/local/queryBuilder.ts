@@ -8,6 +8,19 @@ import { getStore, LOCAL_USER_ID, type Row, type Store } from "./store";
 
 type TableName = keyof Store;
 
+export interface StoreAccessor {
+  get(): Store;
+  set(store: Store): void;
+}
+
+const inMemoryAccessor: StoreAccessor = {
+  get: getStore,
+  set: () => {
+    // the in-memory dev-preview store already mutates in place via
+    // globalThis, so there's nothing extra to persist here.
+  },
+};
+
 interface Filter {
   type: "eq" | "gte" | "lt" | "lte" | "gt" | "in" | "ilike";
   col: string;
@@ -65,7 +78,7 @@ function parseSelect(str: string): { cols: string[]; embeds: { alias: string; su
   return { cols, embeds };
 }
 
-function project(row: Row, table: TableName, selectStr: string): Row {
+function project(row: Row, table: TableName, selectStr: string, accessor: StoreAccessor): Row {
   const { cols, embeds } = parseSelect(selectStr || "*");
   const result: Row = {};
   if (cols.length === 0 || cols.includes("*")) {
@@ -77,14 +90,14 @@ function project(row: Row, table: TableName, selectStr: string): Row {
   for (const embed of embeds) {
     const relDef = RELATIONS[table]?.[embed.alias];
     if (!relDef) continue;
-    const store = getStore();
+    const store = accessor.get();
     const relatedRows = store[relDef.table];
     if (relDef.type === "one") {
       const found = relatedRows.find((r) => r[relDef.foreignKey] === row[relDef.localKey]);
-      result[embed.alias] = found ? project(found, relDef.table, embed.sub || "*") : null;
+      result[embed.alias] = found ? project(found, relDef.table, embed.sub || "*", accessor) : null;
     } else {
       const found = relatedRows.filter((r) => r[relDef.foreignKey] === row[relDef.localKey]);
-      result[embed.alias] = found.map((r) => project(r, relDef.table, embed.sub || "*"));
+      result[embed.alias] = found.map((r) => project(r, relDef.table, embed.sub || "*", accessor));
     }
   }
   return result;
@@ -137,9 +150,11 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
   private singleMode?: "single" | "maybeSingle";
   private payload?: Row | Row[];
   private upsertConflict?: string;
+  private accessor: StoreAccessor;
 
-  constructor(table: string) {
+  constructor(table: string, accessor: StoreAccessor = inMemoryAccessor) {
     this.table = table as TableName;
+    this.accessor = accessor;
   }
 
   select(str = "*") {
@@ -226,8 +241,9 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
   }
 
   private async execute(): Promise<{ data: T | T[] | null; error: { code?: string; message: string } | null }> {
-    const store = getStore();
+    const store = this.accessor.get();
     const table = store[this.table];
+    const proj = (r: Row, selectStr: string) => project(r, this.table, selectStr, this.accessor);
 
     if (this.op === "select") {
       let rows = table.filter((r) => this.filters.every((f) => matchesFilter(r, f)));
@@ -241,7 +257,7 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
         });
       }
       if (this.limitN != null) rows = rows.slice(0, this.limitN);
-      const projected = rows.map((r) => project(r, this.table, this.selectStr)) as T[];
+      const projected = rows.map((r) => proj(r, this.selectStr)) as T[];
       if (this.singleMode === "maybeSingle") return { data: (projected[0] ?? null) as T | null, error: null };
       if (this.singleMode === "single") {
         if (!projected[0]) return { data: null, error: { message: "No rows found", code: "PGRST116" } };
@@ -261,7 +277,8 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
       }));
 
       table.push(...newRows);
-      const projected = newRows.map((r) => project(r, this.table, this.selectStr)) as T[];
+      this.accessor.set(store);
+      const projected = newRows.map((r) => proj(r, this.selectStr)) as T[];
       if (this.singleMode === "single" || this.singleMode === "maybeSingle") {
         return { data: (projected[0] ?? null) as T | null, error: null };
       }
@@ -271,7 +288,8 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
     if (this.op === "update") {
       const matches = table.filter((r) => this.filters.every((f) => matchesFilter(r, f)));
       for (const row of matches) Object.assign(row, this.payload);
-      const projected = matches.map((r) => project(r, this.table, this.selectStr)) as T[];
+      this.accessor.set(store);
+      const projected = matches.map((r) => proj(r, this.selectStr)) as T[];
       return { data: projected, error: null };
     }
 
@@ -281,7 +299,8 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
         const idx = table.indexOf(m);
         if (idx !== -1) table.splice(idx, 1);
       }
-      const projected = matches.map((r) => project(r, this.table, "*")) as T[];
+      this.accessor.set(store);
+      const projected = matches.map((r) => proj(r, "*")) as T[];
       return { data: projected, error: null };
     }
 
@@ -301,6 +320,7 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
           results.push(newRow);
         }
       }
+      this.accessor.set(store);
       return { data: results as T[], error: null };
     }
 
