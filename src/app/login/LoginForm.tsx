@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { login, type LoginState } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
 const initialState: LoginState = {};
 
@@ -36,9 +37,7 @@ export function LoginForm() {
           required
         />
       </div>
-      {state?.error ? (
-        <p className="text-sm text-warning">{state.error}</p>
-      ) : null}
+      {state?.error ? <ErrorBanner message={state.error} /> : null}
       <Button type="submit" size="lg" className="w-full" disabled={pending}>
         {pending ? "מתחברת..." : "כניסה"}
       </Button>

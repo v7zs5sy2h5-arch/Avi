@@ -38,10 +38,16 @@ export async function logTreatment(
   const notes = String(formData.get("notes") ?? "").trim() || null;
   const productName = String(formData.get("product_name") ?? "").trim();
   const productAmountRaw = String(formData.get("product_amount") ?? "").trim();
+  const dateStr = String(formData.get("date") ?? "");
+  const timeStr = String(formData.get("time") ?? "");
 
   if (!amount || amount <= 0) return { error: "יש להזין סכום תקין" };
 
-  const performedAt = new Date().toISOString();
+  const performedAtDate = dateStr && timeStr ? new Date(`${dateStr}T${timeStr}:00`) : new Date();
+  if (performedAtDate.getTime() > Date.now() + 60000) {
+    return { error: "לא ניתן לתעד טיפול לתאריך או שעה שעדיין לא הגיעו" };
+  }
+  const performedAt = performedAtDate.toISOString();
 
   const { data: log, error } = await supabase
     .from("treatment_log")
@@ -59,7 +65,15 @@ export async function logTreatment(
     .select("id")
     .single();
 
-  if (error) return { error: "שגיאה בשמירת התיעוד" };
+  if (error) {
+    if (error.code === "23502") {
+      return {
+        error:
+          "שגיאה בשמירה — המערכת עדיין לא עודכנה במלואה בשרת. אנא נסי שוב עוד כמה דקות.",
+      };
+    }
+    return { error: "שגיאה בשמירת התיעוד, נסי שוב" };
+  }
 
   if (productName && productAmountRaw) {
     await supabase.from("product_sales").insert({

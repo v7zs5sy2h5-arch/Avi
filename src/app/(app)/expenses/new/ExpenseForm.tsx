@@ -5,6 +5,7 @@ import { createExpense } from "../actions";
 import type { FormActionState } from "../actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select, Textarea } from "@/components/ui/Field";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { isoDate } from "@/lib/dates";
 import type { ExpenseCategory } from "@/types/database";
 
@@ -81,9 +82,7 @@ export function ExpenseForm({ categories }: { categories: ExpenseCategory[] }) {
         <Textarea id="notes" name="notes" />
       </div>
 
-      {state?.error ? (
-        <p className="text-sm text-warning">{state.error}</p>
-      ) : null}
+      {state?.error ? <ErrorBanner message={state.error} /> : null}
 
       <Button type="submit" size="lg" className="w-full" disabled={pending}>
         {pending ? "שומרת..." : "שמירת הוצאה"}

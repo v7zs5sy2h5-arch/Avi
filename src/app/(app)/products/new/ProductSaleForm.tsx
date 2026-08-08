@@ -5,6 +5,7 @@ import { createProductSale } from "../actions";
 import type { FormActionState } from "../actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea, Checkbox } from "@/components/ui/Field";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 
 const initialState: FormActionState = {};
 
@@ -40,9 +41,7 @@ export function ProductSaleForm() {
         <Textarea id="notes" name="notes" />
       </div>
 
-      {state?.error ? (
-        <p className="text-sm text-warning">{state.error}</p>
-      ) : null}
+      {state?.error ? <ErrorBanner message={state.error} /> : null}
 
       <Button type="submit" size="lg" className="w-full" disabled={pending}>
         {pending ? "שומרת..." : "שמירת מכירה"}

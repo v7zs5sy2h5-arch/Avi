@@ -5,12 +5,22 @@ import { logTreatment } from "../../actions";
 import type { LogState } from "../../actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea } from "@/components/ui/Field";
+import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { cn } from "@/lib/utils";
 import { PAYMENT_METHOD_LABELS } from "@/types/database";
 import type { PaymentMethod, Treatment } from "@/types/database";
 
 const initialState: LogState = {};
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "card", "bit", "transfer"];
+
+function nowParts() {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return {
+    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
+    time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
+  };
+}
 
 export function LogTreatmentForm({
   treatment,
@@ -23,6 +33,15 @@ export function LogTreatmentForm({
   const [state, formAction, pending] = useActionState(action, initialState);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [showProduct, setShowProduct] = useState(false);
+  const initial = nowParts();
+  const [date, setDate] = useState(initial.date);
+  const [time, setTime] = useState(initial.time);
+
+  function setNow() {
+    const n = nowParts();
+    setDate(n.date);
+    setTime(n.time);
+  }
 
   return (
     <form action={formAction} className="space-y-6 px-4 pb-6 pt-5">
@@ -54,6 +73,36 @@ export function LogTreatmentForm({
             defaultValue={treatment.duration_minutes ?? 30}
             required
             className="h-14 text-lg font-bold"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label>מתי בוצע הטיפול?</Label>
+          <button
+            type="button"
+            onClick={setNow}
+            className="text-sm font-semibold text-accent-strong underline underline-offset-2"
+          >
+            עכשיו
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            type="date"
+            name="date"
+            value={date}
+            max={initial.date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+          <Input
+            type="time"
+            name="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            required
           />
         </div>
       </div>
@@ -105,7 +154,7 @@ export function LogTreatmentForm({
         <Textarea id="notes" name="notes" />
       </div>
 
-      {state?.error ? <p className="text-sm text-warning">{state.error}</p> : null}
+      {state?.error ? <ErrorBanner message={state.error} /> : null}
 
       <Button type="submit" size="lg" className="w-full h-16 text-lg" disabled={pending}>
         {pending ? "שומרת..." : "✅ תיעוד הטיפול"}
