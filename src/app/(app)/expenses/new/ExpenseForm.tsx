@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createExpense } from "../actions";
 import type { FormActionState } from "../actions";
 import { Button } from "@/components/ui/Button";
@@ -12,12 +13,17 @@ import type { ExpenseCategory } from "@/types/database";
 const initialState: FormActionState = {};
 
 export function ExpenseForm({ categories }: { categories: ExpenseCategory[] }) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     createExpense,
     initialState,
   );
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("");
+
+  useEffect(() => {
+    if (state?.ok) router.push("/");
+  }, [state, router]);
 
   function onCategoryChange(id: string) {
     setCategoryId(id);

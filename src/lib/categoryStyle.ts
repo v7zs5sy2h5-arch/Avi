@@ -1,4 +1,5 @@
 import { NAILS_CATEGORY, FACIALS_CATEGORY } from "@/types/database";
+import type { PaymentMethod } from "@/types/database";
 
 export interface CategoryStyle {
   emoji: string;
@@ -64,6 +65,14 @@ export function getTreatmentEmoji(
   }
   return getCategoryStyle(category).emoji;
 }
+
+// Matches PAYMENT_METHOD_LABELS in src/types/database.ts.
+export const PAYMENT_METHOD_EMOJI: Record<PaymentMethod, string> = {
+  cash: "💵",
+  bit: "📲",
+  card: "💳",
+  transfer: "🏦",
+};
 
 export type CategorySlug = "nails" | "facials";
 

@@ -1,13 +1,11 @@
-"use server";
-
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createBrowserClient } from "@/lib/local/browserClient";
 import { slugFromCategory } from "@/lib/categoryStyle";
 import type { PaymentMethod } from "@/types/database";
 
 export interface LogState {
   error?: string;
+  ok?: boolean;
+  slug?: string;
 }
 
 export async function logTreatment(
@@ -15,17 +13,12 @@ export async function logTreatment(
   _prevState: LogState,
   formData: FormData,
 ): Promise<LogState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "יש להתחבר מחדש" };
+  const supabase = createBrowserClient();
 
   const { data: treatment } = await supabase
     .from("treatments")
     .select("*")
     .eq("id", treatmentId)
-    .eq("user_id", user.id)
     .maybeSingle();
 
   if (!treatment) return { error: "הטיפול לא נמצא" };
@@ -42,20 +35,19 @@ export async function logTreatment(
 
   if (!amount || amount <= 0) return { error: "יש להזין סכום תקין" };
 
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const performedAtDate = dateStr
-    ? new Date(`${dateStr}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`)
-    : now;
-  if (performedAtDate.getTime() > Date.now() + 60000) {
-    return { error: "לא ניתן לתעד טיפול לתאריך או שעה שעדיין לא הגיעו" };
+  // Date-only: no time-of-day picker anymore, so treatments are stored at
+  // local midnight of the chosen day.
+  const performedAtDate = dateStr ? new Date(`${dateStr}T00:00:00`) : new Date();
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  if (performedAtDate.getTime() > todayMidnight.getTime()) {
+    return { error: "לא ניתן לתעד טיפול לתאריך שעדיין לא הגיע" };
   }
   const performedAt = performedAtDate.toISOString();
 
   const { data: log, error } = await supabase
     .from("treatment_log")
     .insert({
-      user_id: user.id,
       treatment_id: treatment.id,
       treatment_name: treatment.name,
       amount,
@@ -68,20 +60,13 @@ export async function logTreatment(
     .select("id")
     .single();
 
-  if (error) {
-    if (error.code === "23502") {
-      return {
-        error:
-          "שגיאה בשמירה — המערכת עדיין לא עודכנה במלואה בשרת. אנא נסי שוב עוד כמה דקות.",
-      };
-    }
+  if (error || !log) {
     return { error: "שגיאה בשמירת התיעוד, נסי שוב" };
   }
 
   if (productName && productAmountRaw) {
     await supabase.from("product_sales").insert({
-      user_id: user.id,
-      treatment_log_id: log.id,
+      treatment_log_id: (log as { id: string }).id,
       product_name: productName,
       amount: Number(productAmountRaw),
       is_paid: true,
@@ -90,8 +75,5 @@ export async function logTreatment(
   }
 
   const slug = slugFromCategory(treatment.category as string) ?? "facials";
-  revalidatePath("/");
-  revalidatePath("/reports");
-  revalidatePath(`/log/${slug}`);
-  redirect("/?logged=1");
+  return { ok: true, slug };
 }

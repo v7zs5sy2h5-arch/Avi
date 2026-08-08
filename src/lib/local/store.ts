@@ -1,7 +1,11 @@
-// In-memory data store for the LOCAL_MODE preview (no real Supabase).
-// Lives on `globalThis` so it survives Next.js dev-server hot reloads of
-// this module, but resets on a full server restart — by design, this is a
-// throwaway preview data set, not persistent storage.
+// Shared `Row`/`Store` types plus a throwaway in-memory fallback store,
+// used as `LocalQueryBuilder`'s default `StoreAccessor` (see
+// queryBuilder.ts) when no explicit accessor is supplied. The app itself
+// always passes the real accessor from browserStore.ts (persisted to
+// localStorage) via browserClient.ts — this in-memory version only exists
+// for backward compat / non-browser callers. Lives on `globalThis` so it
+// survives Next.js dev-server hot reloads of this module, but resets on a
+// full server restart — by design, not persistent storage.
 
 export const LOCAL_USER_ID = "00000000-0000-0000-0000-000000000001";
 export const LOCAL_USER_EMAIL = "demo@kerenamar.local";

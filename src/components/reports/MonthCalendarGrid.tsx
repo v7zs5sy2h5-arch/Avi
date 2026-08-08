@@ -77,22 +77,22 @@ export function MonthCalendarGrid({
                   >
                     {hebrewDateLabel(day)}
                   </p>
-                  {d ? (
-                    <div className="mt-1 space-y-0.5">
+                  {d && d.income > 0 ? (
+                    <p className="mt-1 truncate text-[11px] font-bold leading-tight text-accent-strong">
+                      {formatCurrency(d.income)}
+                    </p>
+                  ) : null}
+                  {d && (d.nailsCount > 0 || d.facialsCount > 0) ? (
+                    <div className="mt-0.5 flex flex-wrap gap-0.5">
                       {d.nailsCount > 0 ? (
-                        <div className="truncate rounded bg-nails px-1 py-[1px] text-[9px] font-medium text-white">
+                        <span className="truncate rounded bg-nails px-1 py-[1px] text-[9px] font-medium text-white">
                           💅 {d.nailsCount}
-                        </div>
+                        </span>
                       ) : null}
                       {d.facialsCount > 0 ? (
-                        <div className="truncate rounded bg-facials px-1 py-[1px] text-[9px] font-medium text-white">
+                        <span className="truncate rounded bg-facials px-1 py-[1px] text-[9px] font-medium text-white">
                           ✨ {d.facialsCount}
-                        </div>
-                      ) : null}
-                      {d.income > 0 ? (
-                        <div className="truncate text-[9px] font-bold text-accent-strong">
-                          {formatCurrency(d.income)}
-                        </div>
+                        </span>
                       ) : null}
                     </div>
                   ) : null}

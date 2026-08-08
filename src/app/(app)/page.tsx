@@ -1,7 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { addDays } from "date-fns";
-import { createClient } from "@/lib/supabase/server";
+import { createBrowserClient } from "@/lib/local/browserClient";
 import { Card, CardTitle } from "@/components/ui/Card";
 import {
   getMonthlySummary,
@@ -11,19 +15,40 @@ import {
   getCategoryCounts,
   getPaymentMethodBreakdown,
 } from "@/lib/reports";
+import type {
+  MonthlySummary,
+  FacialsProgress,
+  FacialsWeekComparison,
+  FacialsTreatmentUsage,
+  CategoryCounts,
+  PaymentMethodBreakdown,
+} from "@/lib/reports";
 import { weekStart, isoDate } from "@/lib/dates";
 import { cn, formatCurrency } from "@/lib/utils";
-import { getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
-import { FACIALS_CATEGORY, NAILS_CATEGORY, PAYMENT_METHOD_LABELS } from "@/types/database";
-import type { WeeklyGoal } from "@/types/database";
+import { getCategoryStyle, getTreatmentEmoji, PAYMENT_METHOD_EMOJI } from "@/lib/categoryStyle";
+import { computeWorkDayStreak } from "@/lib/streak";
+import { GoalCelebration } from "@/components/Celebration";
+import { FACIALS_CATEGORY, NAILS_CATEGORY } from "@/types/database";
+import type { WeeklyGoal, TreatmentLog } from "@/types/database";
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ logged?: string }>;
-}) {
-  const { logged } = await searchParams;
-  const supabase = await createClient();
+interface DashboardData {
+  summary: MonthlySummary;
+  facialsProgress: FacialsProgress;
+  facialsComparison: FacialsWeekComparison;
+  facialsUsage: FacialsTreatmentUsage[];
+  todayCounts: CategoryCounts;
+  weekCounts: CategoryCounts;
+  todayPayments: PaymentMethodBreakdown[];
+  goal: WeeklyGoal | null;
+  streak: number;
+}
+
+function celebratedKey(weekStartIso: string) {
+  return `keren_amar_celebrated_${weekStartIso}`;
+}
+
+async function fetchDashboardData(): Promise<DashboardData> {
+  const supabase = createBrowserClient();
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = addDays(todayStart, 1);
@@ -42,6 +67,7 @@ export default async function DashboardPage({
     weekCounts,
     todayPayments,
     { data: goal },
+    { data: allLogs },
   ] = await Promise.all([
     getMonthlySummary(supabase, monthStart, monthEnd),
     getFacialsWeekProgress(supabase, wStart, wEnd),
@@ -50,23 +76,181 @@ export default async function DashboardPage({
     getCategoryCounts(supabase, todayStart, todayEnd),
     getCategoryCounts(supabase, wStart, wEnd),
     getPaymentMethodBreakdown(supabase, todayStart, todayEnd),
-    supabase
-      .from("weekly_goals")
-      .select("*")
-      .eq("week_start", isoDate(wStart))
-      .maybeSingle<WeeklyGoal>(),
+    supabase.from("weekly_goals").select("*").eq("week_start", isoDate(wStart)).maybeSingle<WeeklyGoal>(),
+    supabase.from("treatment_log").select("performed_at").returns<Pick<TreatmentLog, "performed_at">[]>(),
   ]);
+
+  const streak = computeWorkDayStreak((allLogs ?? []).map((l) => l.performed_at));
+
+  return {
+    summary,
+    facialsProgress,
+    facialsComparison,
+    facialsUsage,
+    todayCounts,
+    weekCounts,
+    todayPayments,
+    goal: goal ?? null,
+    streak,
+  };
+}
+
+// Glanceable "how am I doing right now" snapshot — a ring gauge for the
+// weekly facials goal plus today's income as one big number, replacing a
+// stack of prose. Inspired by (not copied from) tochnit-hachlama's
+// HealthGauge.jsx / BusinessPaceCard.jsx.
+function StatusSnapshot({
+  todayTotal,
+  todayPayments,
+  todayTreatmentCount,
+  facialsCompleted,
+  facialsTarget,
+  hitGoal,
+}: {
+  todayTotal: number;
+  todayPayments: PaymentMethodBreakdown[];
+  todayTreatmentCount: number;
+  facialsCompleted: number;
+  facialsTarget: number;
+  hitGoal: boolean;
+}) {
+  const pct = facialsTarget > 0 ? Math.min((facialsCompleted / facialsTarget) * 100, 100) : 0;
+  const radius = 46;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - pct / 100);
+  const ringColor = hitGoal
+    ? "var(--color-success)"
+    : pct >= 60
+      ? "var(--color-gold)"
+      : "var(--color-facials)";
+  const statusLabel = hitGoal
+    ? "עברת את היעד 🎉"
+    : pct >= 60
+      ? "כמעט שם 💪"
+      : pct > 0
+        ? "בתנועה 🎯"
+        : "בואי נתחיל ✨";
+
+  return (
+    <Card className="gradient-header border-accent-soft">
+      <div className="flex items-center gap-4">
+        <div className="relative shrink-0" style={{ width: 100, height: 100 }}>
+          <svg viewBox="0 0 110 110" width={100} height={100} className="-rotate-90">
+            <circle cx="55" cy="55" r={radius} strokeWidth={10} fill="none" stroke="var(--color-border-soft)" />
+            <circle
+              cx="55"
+              cy="55"
+              r={radius}
+              strokeWidth={10}
+              fill="none"
+              stroke={ringColor}
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              strokeLinecap="round"
+              style={{ transition: "stroke-dashoffset 0.6s ease" }}
+            />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-lg font-extrabold" style={{ color: ringColor }}>
+              {facialsCompleted}/{facialsTarget}
+            </span>
+            <span className="text-[10px] font-medium text-text-muted">טיפולי פנים</span>
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-sm text-text-muted">💵 הכנסה היום</p>
+          <p className="text-[28px] font-extrabold leading-tight text-accent-strong">
+            {formatCurrency(todayTotal)}
+          </p>
+          <p className="mt-1 text-sm font-bold" style={{ color: ringColor }}>
+            {statusLabel}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {todayPayments
+          .filter((p) => p.amount > 0)
+          .map((p) => (
+            <span
+              key={p.method}
+              className="rounded-full bg-surface px-2.5 py-1 text-sm font-semibold shadow-sm shadow-black/[0.03]"
+            >
+              {PAYMENT_METHOD_EMOJI[p.method]} {formatCurrency(p.amount)}
+            </span>
+          ))}
+        <span className="rounded-full bg-surface px-2.5 py-1 text-sm text-text-muted shadow-sm shadow-black/[0.03]">
+          📝 {todayTreatmentCount} טיפולים
+        </span>
+      </div>
+    </Card>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const logged = searchParams.get("logged");
+
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [celebrationOpen, setCelebrationOpen] = useState(false);
+
+  useEffect(() => {
+    fetchDashboardData().then((next) => {
+      setData(next);
+
+      const wStartIso = isoDate(weekStart(new Date()));
+      const effectiveTargetCount = Math.max(
+        next.goal?.target_count ?? 0,
+        next.facialsComparison.autoTargetCount,
+      );
+      const hit = effectiveTargetCount > 0 && next.facialsProgress.completedCount >= effectiveTargetCount;
+      if (hit && typeof window !== "undefined") {
+        const key = celebratedKey(wStartIso);
+        if (!window.localStorage.getItem(key)) {
+          window.localStorage.setItem(key, "1");
+          setCelebrationOpen(true);
+        }
+      }
+    });
+  }, []);
+
+  if (!data) {
+    return (
+      <div className="px-4 pt-4">
+        <header className="flex items-center justify-between pt-4 pb-2">
+          <h1 className="font-heading text-xl">שלום קרן 👋</h1>
+          <Image src="/logo-mark.png" alt="" width={24} height={34} />
+        </header>
+        <p className="mt-8 text-center text-sm text-text-muted">טוענת נתונים…</p>
+      </div>
+    );
+  }
+
+  const {
+    summary,
+    facialsProgress,
+    facialsComparison,
+    facialsUsage,
+    todayCounts,
+    weekCounts,
+    todayPayments,
+    goal,
+    streak,
+  } = data;
 
   const todayTotal = todayPayments.reduce((s, p) => s + p.amount, 0);
 
-  const effectiveTargetCount = Math.max(
-    goal?.target_count ?? 0,
-    facialsComparison.autoTargetCount,
-  );
-  const effectiveTargetRevenue = Math.max(
-    goal?.target_revenue ?? 0,
-    facialsComparison.autoTargetRevenue,
-  );
+  const effectiveTargetCount = Math.max(goal?.target_count ?? 0, facialsComparison.autoTargetCount);
+  const effectiveTargetRevenue = Math.max(goal?.target_revenue ?? 0, facialsComparison.autoTargetRevenue);
   const remainingForGoal = Math.max(effectiveTargetCount - facialsProgress.completedCount, 0);
   const hitGoal = facialsProgress.completedCount >= effectiveTargetCount;
   const suggestedTreatments = facialsUsage
@@ -89,6 +273,15 @@ export default async function DashboardPage({
       {logged ? (
         <div className="mt-2 rounded-2xl bg-success-bg px-4 py-2.5 text-center text-sm font-semibold text-success">
           ✅ הטיפול תועד בהצלחה!
+        </div>
+      ) : null}
+
+      {streak > 0 ? (
+        <div
+          className="mt-3 flex items-center justify-center gap-1.5 rounded-2xl bg-gold-bg px-4 py-2 text-center text-sm font-semibold text-gold"
+          style={{ animation: "toast-in 0.3s ease-out" }}
+        >
+          🔥 {streak} {streak === 1 ? "יום ברצף עם טיפולים" : "ימים ברצף עם טיפולים"}
         </div>
       ) : null}
 
@@ -127,36 +320,14 @@ export default async function DashboardPage({
       </div>
 
       <section className="mt-5">
-        <Card className="gradient-header border-accent-soft">
-          <CardTitle>💵 סיכום היום — עד עכשיו</CardTitle>
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm text-text-muted">סה&quot;כ היום</span>
-            <span className="text-2xl font-bold text-accent-strong">
-              {formatCurrency(todayTotal)}
-            </span>
-          </div>
-          {todayTotal === 0 ? (
-            <p className="mt-2 text-sm text-text-muted">עוד לא נכנס כסף היום</p>
-          ) : (
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              {todayPayments
-                .filter((p) => p.amount > 0)
-                .map((p) => (
-                  <div
-                    key={p.method}
-                    className="flex items-center justify-between rounded-xl bg-surface px-3 py-2 text-sm shadow-sm shadow-black/[0.03]"
-                  >
-                    <span className="text-text-muted">{PAYMENT_METHOD_LABELS[p.method]}</span>
-                    <span className="font-semibold">{formatCurrency(p.amount)}</span>
-                  </div>
-                ))}
-            </div>
-          )}
-          <p className="mt-3 text-sm text-text-muted">
-            {todayCounts.nailsCount + todayCounts.facialsCount} טיפולים תועדו היום (
-            {todayCounts.nailsCount} ציפורניים, {todayCounts.facialsCount} טיפולי פנים)
-          </p>
-        </Card>
+        <StatusSnapshot
+          todayTotal={todayTotal}
+          todayPayments={todayPayments}
+          todayTreatmentCount={todayCounts.nailsCount + todayCounts.facialsCount}
+          facialsCompleted={facialsProgress.completedCount}
+          facialsTarget={effectiveTargetCount}
+          hitGoal={hitGoal}
+        />
       </section>
 
       <section className="mt-3">
@@ -268,6 +439,13 @@ export default async function DashboardPage({
           </div>
         </Card>
       </section>
+
+      <GoalCelebration
+        open={celebrationOpen}
+        title="עברת את היעד השבועי! 🎉"
+        message={`${facialsProgress.completedCount} טיפולי פנים השבוע — גידול יפה משבוע שעבר. ככה ממשיכים!`}
+        onDismiss={() => setCelebrationOpen(false)}
+      />
     </div>
   );
 }

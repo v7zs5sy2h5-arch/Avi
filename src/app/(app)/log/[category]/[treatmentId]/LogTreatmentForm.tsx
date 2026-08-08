@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { logTreatment } from "../../actions";
 import type { LogState } from "../../actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea } from "@/components/ui/Field";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { cn } from "@/lib/utils";
+import { PAYMENT_METHOD_EMOJI } from "@/lib/categoryStyle";
 import { PAYMENT_METHOD_LABELS } from "@/types/database";
 import type { PaymentMethod, Treatment } from "@/types/database";
 
@@ -26,12 +28,19 @@ export function LogTreatmentForm({
   treatment: Treatment;
   categorySlug: string;
 }) {
+  const router = useRouter();
   const action = logTreatment.bind(null, treatment.id);
   const [state, formAction, pending] = useActionState(action, initialState);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [showProduct, setShowProduct] = useState(false);
   const today = todayIso();
   const [date, setDate] = useState(today);
+
+  useEffect(() => {
+    if (state?.ok) {
+      router.push("/?logged=1");
+    }
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-6 px-4 pb-6 pt-5">
@@ -104,6 +113,7 @@ export function LogTreatmentForm({
                   : "bg-surface-soft text-text-muted",
               )}
             >
+              <span aria-hidden>{PAYMENT_METHOD_EMOJI[method]}</span>
               {PAYMENT_METHOD_LABELS[method]}
             </button>
           ))}

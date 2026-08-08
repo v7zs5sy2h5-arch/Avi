@@ -1,23 +1,16 @@
-"use server";
-
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createBrowserClient } from "@/lib/local/browserClient";
 import type { PaymentMethod } from "@/types/database";
 
 export interface FormActionState {
   error?: string;
+  ok?: boolean;
 }
 
 export async function createProductSale(
   _prevState: FormActionState,
   formData: FormData,
 ): Promise<FormActionState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { error: "יש להתחבר מחדש" };
+  const supabase = createBrowserClient();
 
   const productName = String(formData.get("product_name") ?? "").trim();
   const amount = Number(formData.get("amount") ?? 0);
@@ -29,7 +22,6 @@ export async function createProductSale(
   if (!amount || amount <= 0) return { error: "יש להזין סכום תקין" };
 
   const { error } = await supabase.from("product_sales").insert({
-    user_id: user.id,
     product_name: productName,
     amount,
     payment_method: paymentMethod,
@@ -40,7 +32,5 @@ export async function createProductSale(
 
   if (error) return { error: "שגיאה בשמירת המכירה" };
 
-  revalidatePath("/");
-  revalidatePath("/reports");
-  redirect("/");
+  return { ok: true };
 }

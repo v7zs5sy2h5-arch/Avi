@@ -1,14 +1,7 @@
 import Link from "next/link";
-import {
-  ListChecks,
-  Target,
-  ShoppingBag,
-  Receipt,
-  LogOut,
-  ChevronLeft,
-} from "lucide-react";
+import { ListChecks, Target, ShoppingBag, Receipt, ChevronLeft } from "lucide-react";
 import { Header } from "@/components/layout/Header";
-import { signOut } from "./actions";
+import { BackupSection } from "./BackupSection";
 
 const links = [
   {
@@ -71,12 +64,9 @@ export default function MorePage() {
           </Link>
         ))}
 
-        <form action={signOut} className="pt-2">
-          <button className="flex w-full items-center gap-3 rounded-2xl p-4 text-warning">
-            <LogOut size={20} />
-            <span className="text-[15px]">התנתקות</span>
-          </button>
-        </form>
+        <div className="pt-2">
+          <BackupSection />
+        </div>
       </div>
     </div>
   );

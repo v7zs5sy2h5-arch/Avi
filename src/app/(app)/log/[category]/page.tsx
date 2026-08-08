@@ -1,28 +1,39 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { createBrowserClient } from "@/lib/local/browserClient";
 import { Header } from "@/components/layout/Header";
 import { formatCurrency } from "@/lib/utils";
 import { categoryFromSlug, getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
 import { cn } from "@/lib/utils";
 import type { Treatment } from "@/types/database";
 
-export default async function LogCategoryPage({
-  params,
-}: {
-  params: Promise<{ category: string }>;
-}) {
-  const { category: slug } = await params;
+export default function LogCategoryPage() {
+  const params = useParams<{ category: string }>();
+  const slug = params.category;
   const category = categoryFromSlug(slug);
-  if (!category) notFound();
 
-  const supabase = await createClient();
-  const { data: treatments } = await supabase
-    .from("treatments")
-    .select("*")
-    .eq("category", category)
-    .order("sort_order")
-    .returns<Treatment[]>();
+  const [treatments, setTreatments] = useState<Treatment[] | null>(null);
+
+  useEffect(() => {
+    if (!category) return;
+    const supabase = createBrowserClient();
+    supabase
+      .from("treatments")
+      .select("*")
+      .eq("category", category)
+      .order("sort_order")
+      .returns<Treatment[]>()
+      .then(({ data }) => setTreatments(data ?? []));
+  }, [category]);
+
+  if (!category) {
+    return (
+      <div className="px-4 pt-8 text-center text-sm text-text-muted">קטגוריה לא נמצאה</div>
+    );
+  }
 
   const style = getCategoryStyle(category);
 
@@ -55,7 +66,7 @@ export default async function LogCategoryPage({
             </p>
           </Link>
         ))}
-        {(!treatments || treatments.length === 0) && (
+        {treatments != null && treatments.length === 0 && (
           <p className="col-span-2 py-10 text-center text-sm text-text-muted">
             אין עדיין טיפולים בקטגוריה הזו. אפשר להוסיף במחירון בהגדרות.
           </p>

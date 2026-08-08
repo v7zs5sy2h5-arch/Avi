@@ -1,12 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createProductSale } from "../actions";
 import type { FormActionState } from "../actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea, Checkbox } from "@/components/ui/Field";
 import { ErrorBanner } from "@/components/ui/ErrorBanner";
 import { cn } from "@/lib/utils";
+import { PAYMENT_METHOD_EMOJI } from "@/lib/categoryStyle";
 import { PAYMENT_METHOD_LABELS } from "@/types/database";
 import type { PaymentMethod } from "@/types/database";
 
@@ -14,11 +16,16 @@ const initialState: FormActionState = {};
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "card", "bit", "transfer"];
 
 export function ProductSaleForm() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     createProductSale,
     initialState,
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
+
+  useEffect(() => {
+    if (state?.ok) router.push("/");
+  }, [state, router]);
 
   return (
     <form action={formAction} className="space-y-5 px-4 pb-6">
@@ -56,6 +63,7 @@ export function ProductSaleForm() {
                   : "bg-surface-soft text-text-muted",
               )}
             >
+              <span aria-hidden>{PAYMENT_METHOD_EMOJI[method]}</span>
               {PAYMENT_METHOD_LABELS[method]}
             </button>
           ))}

@@ -1,5 +1,9 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { createBrowserClient } from "@/lib/local/browserClient";
 import { PAYMENT_METHOD_LABELS } from "@/types/database";
+
+// Duck-typed client shape — see reports.ts for why this isn't imported
+// from @supabase/supabase-js anymore.
+type SupabaseClient = ReturnType<typeof createBrowserClient>;
 import type { PaymentMethod } from "@/types/database";
 
 export interface Transaction {

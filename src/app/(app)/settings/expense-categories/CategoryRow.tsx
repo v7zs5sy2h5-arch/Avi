@@ -9,10 +9,22 @@ import { formatCurrency } from "@/lib/utils";
 import { updateExpenseCategory, deleteExpenseCategory } from "./actions";
 import type { ExpenseCategory } from "@/types/database";
 
-export function CategoryRow({ category }: { category: ExpenseCategory }) {
+export function CategoryRow({
+  category,
+  onSaved,
+}: {
+  category: ExpenseCategory;
+  onSaved?: () => void;
+}) {
   const [editing, setEditing] = useState(false);
-  const updateAction = updateExpenseCategory.bind(null, category.id);
-  const deleteAction = deleteExpenseCategory.bind(null, category.id);
+  const updateAction = async (formData: FormData) => {
+    await updateExpenseCategory(category.id, formData);
+    onSaved?.();
+  };
+  const deleteAction = async () => {
+    await deleteExpenseCategory(category.id);
+    onSaved?.();
+  };
 
   if (!editing) {
     return (

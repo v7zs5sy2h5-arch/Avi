@@ -1,6 +1,10 @@
+"use client";
+
 import Link from "next/link";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronRight, ChevronLeft, ChevronsRight, ChevronsLeft } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createBrowserClient } from "@/lib/local/browserClient";
 import { Header } from "@/components/layout/Header";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
@@ -12,13 +16,23 @@ import {
   getPeriodStats,
   getPaymentMethodBreakdown,
 } from "@/lib/reports";
+import type {
+  MonthlySummary,
+  TreatmentStat,
+  NailsFacialsTrendPoint,
+  DailyBreakdown,
+  PeriodStats,
+  PaymentMethodBreakdown,
+} from "@/lib/reports";
 import { PAYMENT_METHOD_LABELS } from "@/types/database";
+import { PAYMENT_METHOD_EMOJI } from "@/lib/categoryStyle";
 import { getTransactions } from "@/lib/transactions";
+import type { Transaction } from "@/lib/transactions";
 import { NailsFacialsChart } from "@/components/charts/NailsFacialsChart";
 import { MonthCalendarGrid } from "@/components/reports/MonthCalendarGrid";
 import type { WeeklyGoal } from "@/types/database";
 
-function parseMonth(param?: string) {
+function parseMonth(param?: string | null) {
   if (param && /^\d{4}-\d{2}$/.test(param)) {
     const [y, m] = param.split("-").map(Number);
     return new Date(y, m - 1, 1);
@@ -31,59 +45,97 @@ function monthParam(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export default async function ReportsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string; kind?: string }>;
-}) {
-  const params = await searchParams;
-  const monthStart = parseMonth(params.month);
+interface ReportsData {
+  summary: MonthlySummary;
+  treatmentStats: TreatmentStat[];
+  nailsFacialsTrend: NailsFacialsTrendPoint[];
+  dailyBreakdown: DailyBreakdown[];
+  currentPeriod: PeriodStats;
+  previousPeriod: PeriodStats;
+  paymentBreakdown: PaymentMethodBreakdown[];
+  transactions: Transaction[];
+  goals: WeeklyGoal[];
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense fallback={<ReportsFallback />}>
+      <ReportsContent />
+    </Suspense>
+  );
+}
+
+function ReportsFallback() {
+  return (
+    <div className="px-4">
+      <Header title="דוחות 📊" />
+      <p className="mt-8 text-center text-sm text-text-muted">טוענת נתונים…</p>
+    </div>
+  );
+}
+
+function ReportsContent() {
+  const searchParams = useSearchParams();
+  const monthStart = parseMonth(searchParams.get("month"));
   const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
-  const kind = params.kind ?? "all";
+  const kind = searchParams.get("kind") ?? "all";
 
-  const supabase = await createClient();
+  const [data, setData] = useState<ReportsData | null>(null);
 
-  const monthStarts12 = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(monthStart.getFullYear(), monthStart.getMonth() - 11 + i, 1);
-    return d;
-  });
+  useEffect(() => {
+    const supabase = createBrowserClient();
+    const monthStarts12 = Array.from({ length: 12 }, (_, i) => {
+      return new Date(monthStart.getFullYear(), monthStart.getMonth() - 11 + i, 1);
+    });
+    const prevMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
+
+    Promise.all([
+      getMonthlySummary(supabase, monthStart, monthEnd),
+      getIncomePerHourByTreatment(supabase, monthStart, monthEnd),
+      getNailsFacialsTrend(supabase, monthStarts12),
+      getDailyBreakdown(supabase, monthStart, monthEnd),
+      getPeriodStats(supabase, monthStart, monthEnd),
+      getPeriodStats(supabase, prevMonth, monthStart),
+      getPaymentMethodBreakdown(supabase, monthStart, monthEnd),
+      getTransactions(supabase, monthStart, monthEnd),
+      supabase
+        .from("weekly_goals")
+        .select("*")
+        .order("week_start", { ascending: false })
+        .limit(10)
+        .returns<WeeklyGoal[]>(),
+    ]).then(
+      ([
+        summary,
+        treatmentStats,
+        nailsFacialsTrend,
+        dailyBreakdown,
+        currentPeriod,
+        previousPeriod,
+        paymentBreakdown,
+        transactions,
+        { data: goals },
+      ]) => {
+        setData({
+          summary,
+          treatmentStats,
+          nailsFacialsTrend,
+          dailyBreakdown,
+          currentPeriod,
+          previousPeriod,
+          paymentBreakdown,
+          transactions,
+          goals: goals ?? [],
+        });
+      },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [monthStart.getTime(), monthEnd.getTime()]);
 
   const prevMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
   const nextMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
   const prevYear = new Date(monthStart.getFullYear() - 1, monthStart.getMonth(), 1);
   const nextYear = new Date(monthStart.getFullYear() + 1, monthStart.getMonth(), 1);
-
-  const [
-    summary,
-    treatmentStats,
-    nailsFacialsTrend,
-    dailyBreakdown,
-    currentPeriod,
-    previousPeriod,
-    paymentBreakdown,
-    transactions,
-    { data: goals },
-  ] = await Promise.all([
-    getMonthlySummary(supabase, monthStart, monthEnd),
-    getIncomePerHourByTreatment(supabase, monthStart, monthEnd),
-    getNailsFacialsTrend(supabase, monthStarts12),
-    getDailyBreakdown(supabase, monthStart, monthEnd),
-    getPeriodStats(supabase, monthStart, monthEnd),
-    getPeriodStats(supabase, prevMonth, monthStart),
-    getPaymentMethodBreakdown(supabase, monthStart, monthEnd),
-    getTransactions(supabase, monthStart, monthEnd),
-    supabase
-      .from("weekly_goals")
-      .select("*")
-      .order("week_start", { ascending: false })
-      .limit(10)
-      .returns<WeeklyGoal[]>(),
-  ]);
-
-  const paymentTotal = paymentBreakdown.reduce((s, p) => s + p.amount, 0);
-
-  const filteredTransactions =
-    kind === "all" ? transactions : transactions.filter((t) => t.kind === kind);
 
   return (
     <div className="px-4">
@@ -123,6 +175,42 @@ export default async function ReportsPage({
         </Link>
       </div>
 
+      {!data ? (
+        <p className="mt-8 text-center text-sm text-text-muted">טוענת נתונים…</p>
+      ) : (
+        <ReportsBody data={data} kind={kind} monthStart={monthStart} />
+      )}
+    </div>
+  );
+}
+
+function ReportsBody({
+  data,
+  kind,
+  monthStart,
+}: {
+  data: ReportsData;
+  kind: string;
+  monthStart: Date;
+}) {
+  const {
+    summary,
+    treatmentStats,
+    nailsFacialsTrend,
+    dailyBreakdown,
+    currentPeriod,
+    previousPeriod,
+    paymentBreakdown,
+    transactions,
+    goals,
+  } = data;
+
+  const paymentTotal = paymentBreakdown.reduce((s, p) => s + p.amount, 0);
+  const filteredTransactions =
+    kind === "all" ? transactions : transactions.filter((t) => t.kind === kind);
+
+  return (
+    <>
       <Card className="mt-4">
         <CardTitle>💰 סיכום חודשי (שולם בפועל)</CardTitle>
         <div className="space-y-1.5 text-sm">
@@ -145,7 +233,7 @@ export default async function ReportsPage({
             {paymentBreakdown.map((p) => (
               <Row
                 key={p.method}
-                label={PAYMENT_METHOD_LABELS[p.method]}
+                label={`${PAYMENT_METHOD_EMOJI[p.method]} ${PAYMENT_METHOD_LABELS[p.method]}`}
                 value={formatCurrency(p.amount)}
               />
             ))}
@@ -158,7 +246,7 @@ export default async function ReportsPage({
 
       <Card className="mt-3">
         <CardTitle>
-          📅 פירוט יומי — ציפורניים מול טיפולי פנים ({monthStart.toLocaleDateString("he-IL", { month: "long" })})
+          📅 הכנסה יומית — ציפורניים מול טיפולי פנים ({monthStart.toLocaleDateString("he-IL", { month: "long" })})
         </CardTitle>
         <MonthCalendarGrid monthStart={monthStart} breakdown={dailyBreakdown} />
       </Card>
@@ -215,7 +303,7 @@ export default async function ReportsPage({
 
       <Card className="mt-3">
         <CardTitle>🎯 היסטוריית יעדים שבועיים</CardTitle>
-        {!goals || goals.length === 0 ? (
+        {goals.length === 0 ? (
           <p className="text-sm text-text-muted">אין עדיין יעדים שמורים</p>
         ) : (
           <div className="space-y-2">
@@ -284,7 +372,7 @@ export default async function ReportsPage({
           </div>
         )}
       </Card>
-    </div>
+    </>
   );
 }
 

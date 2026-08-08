@@ -139,7 +139,24 @@ function matchesFilter(row: Row, f: Filter): boolean {
 
 type Op = "select" | "insert" | "update" | "delete" | "upsert";
 
-export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] | null; error: { code?: string; message: string } | null }> {
+type ErrorShape = { code?: string; message: string } | null;
+
+// Mirrors the supabase-js shape: a plain select resolves to `T[] | null`,
+// while `.single()`/`.maybeSingle()` narrow it to `T | null`. `Single` is a
+// phantom type parameter — it only shapes the public `then()`/`execute()`
+// signature below, tracking which of those two modes the chain is in.
+type QueryResult<T, Single extends boolean> = {
+  data: (Single extends true ? T | null : T[] | null);
+  error: ErrorShape;
+};
+
+// Intentionally untyped default below, matching supabase-js's own loose
+// default generic; callers opt into precise types via
+// .returns<X>()/.single<X>()/.maybeSingle<X>().
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export class LocalQueryBuilder<T = any, Single extends boolean = false>
+  implements PromiseLike<QueryResult<T, Single>>
+{
   private table: TableName;
   private op: Op = "select";
   private selectStr = "*";
@@ -198,16 +215,16 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
     this.limitN = n;
     return this;
   }
-  maybeSingle() {
+  maybeSingle<X = T>() {
     this.singleMode = "maybeSingle";
-    return this;
+    return this as unknown as LocalQueryBuilder<X, true>;
   }
-  single() {
+  single<X = T>() {
     this.singleMode = "single";
-    return this;
+    return this as unknown as LocalQueryBuilder<X, true>;
   }
   returns<X = T>() {
-    return this as unknown as LocalQueryBuilder<X extends unknown[] ? X[number] : X>;
+    return this as unknown as LocalQueryBuilder<X extends unknown[] ? X[number] : X, Single>;
   }
 
   insert(payload: Row | Row[]) {
@@ -231,16 +248,21 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
     return this;
   }
 
-  then<TResult1 = { data: T | T[] | null; error: { code?: string; message: string } | null }, TResult2 = never>(
+  then<TResult1 = QueryResult<T, Single>, TResult2 = never>(
     onfulfilled?:
-      | ((value: { data: T | T[] | null; error: { code?: string; message: string } | null }) => TResult1 | PromiseLike<TResult1>)
+      | ((value: QueryResult<T, Single>) => TResult1 | PromiseLike<TResult1>)
       | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): PromiseLike<TResult1 | TResult2> {
     return this.execute().then(onfulfilled, onrejected);
   }
 
-  private async execute(): Promise<{ data: T | T[] | null; error: { code?: string; message: string } | null }> {
+  // Untyped on purpose: the actual runtime shape (single item vs array)
+  // depends on `singleMode`, which the `Single` phantom param above tracks
+  // only at the type level. `then()` re-exposes the properly narrowed
+  // `QueryResult<T, Single>` to callers.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see note above
+  private async execute(): Promise<{ data: any; error: ErrorShape }> {
     const store = this.accessor.get();
     const table = store[this.table];
     const proj = (r: Row, selectStr: string) => project(r, this.table, selectStr, this.accessor);

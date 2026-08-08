@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label, Checkbox, Textarea } from "@/components/ui/Field";
 import { createTreatment } from "./actions";
 
-export function AddTreatmentForm({ categories }: { categories: string[] }) {
+export function AddTreatmentForm({
+  categories,
+  onSaved,
+}: {
+  categories: string[];
+  onSaved?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [isSeries, setIsSeries] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -33,6 +39,7 @@ export function AddTreatmentForm({ categories }: { categories: string[] }) {
           await createTreatment(formData);
           formRef.current?.reset();
           setOpen(false);
+          onSaved?.();
         }}
         className="space-y-3"
       >

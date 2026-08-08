@@ -10,11 +10,23 @@ import { getTreatmentEmoji } from "@/lib/categoryStyle";
 import { updateTreatment, deleteTreatment } from "./actions";
 import type { Treatment } from "@/types/database";
 
-export function TreatmentRow({ treatment }: { treatment: Treatment }) {
+export function TreatmentRow({
+  treatment,
+  onSaved,
+}: {
+  treatment: Treatment;
+  onSaved?: () => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [isSeries, setIsSeries] = useState(treatment.is_series);
-  const updateAction = updateTreatment.bind(null, treatment.id);
-  const deleteAction = deleteTreatment.bind(null, treatment.id);
+  const updateAction = async (formData: FormData) => {
+    await updateTreatment(treatment.id, formData);
+    onSaved?.();
+  };
+  const deleteAction = async () => {
+    await deleteTreatment(treatment.id);
+    onSaved?.();
+  };
 
   if (!editing) {
     return (

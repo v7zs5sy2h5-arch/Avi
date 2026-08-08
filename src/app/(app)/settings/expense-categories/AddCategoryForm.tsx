@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input, Label } from "@/components/ui/Field";
 import { createExpenseCategory } from "./actions";
 
-export function AddCategoryForm() {
+export function AddCategoryForm({ onSaved }: { onSaved?: () => void }) {
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -28,6 +28,7 @@ export function AddCategoryForm() {
           await createExpenseCategory(formData);
           formRef.current?.reset();
           setOpen(false);
+          onSaved?.();
         }}
         className="space-y-3"
       >

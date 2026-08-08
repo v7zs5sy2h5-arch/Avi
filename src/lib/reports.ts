@@ -1,5 +1,10 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { createBrowserClient } from "@/lib/local/browserClient";
 import { NAILS_CATEGORY, FACIALS_CATEGORY } from "@/types/database";
+
+// Duck-typed client shape (same `.from(table)...` chain the browser client
+// speaks) — kept generic here rather than importing @supabase/supabase-js,
+// which this app no longer depends on now that Supabase has been removed.
+type SupabaseClient = ReturnType<typeof createBrowserClient>;
 import type { PaymentMethod } from "@/types/database";
 import { isoDate } from "@/lib/dates";
 

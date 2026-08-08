@@ -1,7 +1,4 @@
-"use server";
-
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createBrowserClient } from "@/lib/local/browserClient";
 
 function numOrNull(v: FormDataEntryValue | null) {
   const s = String(v ?? "").trim();
@@ -14,14 +11,9 @@ function strOrNull(v: FormDataEntryValue | null) {
 }
 
 export async function createTreatment(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
+  const supabase = createBrowserClient();
 
   await supabase.from("treatments").insert({
-    user_id: user.id,
     category: strOrNull(formData.get("category")) ?? "אחר",
     name: strOrNull(formData.get("name")) ?? "טיפול חדש",
     description: strOrNull(formData.get("description")),
@@ -32,18 +24,10 @@ export async function createTreatment(formData: FormData) {
     series_size: numOrNull(formData.get("series_size")),
     series_price: numOrNull(formData.get("series_price")),
   });
-
-  revalidatePath("/settings/treatments");
-  revalidatePath("/log/nails");
-  revalidatePath("/log/facials");
 }
 
 export async function updateTreatment(id: string, formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
+  const supabase = createBrowserClient();
 
   await supabase
     .from("treatments")
@@ -58,24 +42,10 @@ export async function updateTreatment(id: string, formData: FormData) {
       series_size: numOrNull(formData.get("series_size")),
       series_price: numOrNull(formData.get("series_price")),
     })
-    .eq("id", id)
-    .eq("user_id", user.id);
-
-  revalidatePath("/settings/treatments");
-  revalidatePath("/log/nails");
-  revalidatePath("/log/facials");
+    .eq("id", id);
 }
 
 export async function deleteTreatment(id: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return;
-
-  await supabase.from("treatments").delete().eq("id", id).eq("user_id", user.id);
-
-  revalidatePath("/settings/treatments");
-  revalidatePath("/log/nails");
-  revalidatePath("/log/facials");
+  const supabase = createBrowserClient();
+  await supabase.from("treatments").delete().eq("id", id);
 }

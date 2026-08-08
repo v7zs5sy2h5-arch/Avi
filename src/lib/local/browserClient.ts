@@ -14,7 +14,8 @@ const browserAccessor: StoreAccessor = {
 
 export function createBrowserClient() {
   return {
-    from<T = Record<string, unknown>>(table: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    from<T = any>(table: string) {
       return new LocalQueryBuilder<T>(table, browserAccessor);
     },
     auth: {

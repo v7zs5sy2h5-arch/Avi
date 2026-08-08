@@ -1,27 +1,48 @@
-import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { createBrowserClient } from "@/lib/local/browserClient";
 import { Header } from "@/components/layout/Header";
 import { categoryFromSlug, getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
 import { LogTreatmentForm } from "./LogTreatmentForm";
 import type { Treatment } from "@/types/database";
 
-export default async function LogTreatmentPage({
-  params,
-}: {
-  params: Promise<{ category: string; treatmentId: string }>;
-}) {
-  const { category: slug, treatmentId } = await params;
+export default function LogTreatmentPage() {
+  const params = useParams<{ category: string; treatmentId: string }>();
+  const slug = params.category;
+  const treatmentId = params.treatmentId;
   const category = categoryFromSlug(slug);
-  if (!category) notFound();
 
-  const supabase = await createClient();
-  const { data: treatment } = await supabase
-    .from("treatments")
-    .select("*")
-    .eq("id", treatmentId)
-    .maybeSingle<Treatment>();
+  const [treatment, setTreatment] = useState<Treatment | null | undefined>(undefined);
 
-  if (!treatment) notFound();
+  useEffect(() => {
+    const supabase = createBrowserClient();
+    supabase
+      .from("treatments")
+      .select("*")
+      .eq("id", treatmentId)
+      .maybeSingle<Treatment>()
+      .then(({ data }) => setTreatment(data));
+  }, [treatmentId]);
+
+  if (!category) {
+    return (
+      <div className="px-4 pt-8 text-center text-sm text-text-muted">קטגוריה לא נמצאה</div>
+    );
+  }
+
+  if (treatment === undefined) {
+    return (
+      <div className="px-4 pt-8 text-center text-sm text-text-muted">טוענת…</div>
+    );
+  }
+
+  if (treatment === null) {
+    return (
+      <div className="px-4 pt-8 text-center text-sm text-text-muted">הטיפול לא נמצא</div>
+    );
+  }
 
   const style = getCategoryStyle(category);
   const emoji = getTreatmentEmoji(treatment.name, category);
