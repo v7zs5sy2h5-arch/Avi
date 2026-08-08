@@ -1,4 +1,3 @@
-export type AppointmentStatus = "planned" | "completed" | "cancelled" | "no_show";
 export type PaymentMethod = "cash" | "card" | "bit" | "transfer";
 
 export interface Treatment {
@@ -17,40 +16,9 @@ export interface Treatment {
   created_at: string;
 }
 
-export interface Client {
-  id: string;
-  user_id: string;
-  name: string;
-  phone: string | null;
-  notes: string | null;
-  created_at: string;
-}
-
-export interface Appointment {
-  id: string;
-  user_id: string;
-  client_id: string;
-  treatment_id: string | null;
-  treatment_name_freetext: string | null;
-  expected_price: number | null;
-  starts_at: string;
-  duration_minutes: number;
-  status: AppointmentStatus;
-  notes: string | null;
-  follow_up_of_appointment_id: string | null;
-  created_at: string;
-}
-
-export interface AppointmentWithRelations extends Appointment {
-  client: Client;
-  treatment: Treatment | null;
-}
-
 export interface TreatmentLog {
   id: string;
   user_id: string;
-  appointment_id: string;
-  client_id: string;
   treatment_id: string | null;
   treatment_name: string;
   amount: number;
@@ -65,7 +33,6 @@ export interface TreatmentLog {
 export interface ProductSale {
   id: string;
   user_id: string;
-  client_id: string | null;
   treatment_log_id: string | null;
   product_name: string;
   amount: number;
@@ -112,11 +79,4 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   card: "אשראי",
   bit: "ביט",
   transfer: "העברה בנקאית",
-};
-
-export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
-  planned: "מתוכנן",
-  completed: "הושלם",
-  cancelled: "בוטל",
-  no_show: "לא הגיעה",
 };

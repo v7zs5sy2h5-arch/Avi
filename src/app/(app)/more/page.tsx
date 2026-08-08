@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {
-  Users,
   ListChecks,
-  Wallet,
   Target,
   ShoppingBag,
   Receipt,
@@ -13,20 +11,6 @@ import { Header } from "@/components/layout/Header";
 import { signOut } from "./actions";
 
 const links = [
-  {
-    href: "/payments-pending",
-    label: "תשלומים ממתינים",
-    icon: Wallet,
-    emoji: "⏳",
-    badge: "bg-warning-bg text-warning",
-  },
-  {
-    href: "/clients",
-    label: "ניהול לקוחות",
-    icon: Users,
-    emoji: "👥",
-    badge: "bg-accent-soft text-accent-strong",
-  },
   {
     href: "/products/new",
     label: "מכירת מוצר",

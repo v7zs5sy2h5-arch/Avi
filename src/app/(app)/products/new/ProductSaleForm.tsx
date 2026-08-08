@@ -5,12 +5,10 @@ import { createProductSale } from "../actions";
 import type { FormActionState } from "../actions";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea, Checkbox } from "@/components/ui/Field";
-import { ClientAutocomplete } from "@/components/ClientAutocomplete";
-import type { Client } from "@/types/database";
 
 const initialState: FormActionState = {};
 
-export function ProductSaleForm({ clients }: { clients: Client[] }) {
+export function ProductSaleForm() {
   const [state, formAction, pending] = useActionState(
     createProductSale,
     initialState,
@@ -18,12 +16,6 @@ export function ProductSaleForm({ clients }: { clients: Client[] }) {
 
   return (
     <form action={formAction} className="space-y-5 px-4 pb-6">
-      <ClientAutocomplete
-        clients={clients}
-        required={false}
-        label="לקוחה (אופציונלי)"
-      />
-
       <div>
         <Label htmlFor="product_name">שם המוצר</Label>
         <Input id="product_name" name="product_name" required />

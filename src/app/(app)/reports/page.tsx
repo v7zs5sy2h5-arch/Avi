@@ -7,7 +7,6 @@ import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import {
   getMonthlySummary,
   getIncomePerHourByTreatment,
-  getFollowUpRate,
   getNailsFacialsTrend,
   getWeeklyHoursTrend,
 } from "@/lib/reports";
@@ -56,7 +55,6 @@ export default async function ReportsPage({
   const [
     summary,
     treatmentStats,
-    followUp,
     nailsFacialsTrend,
     weeklyHoursTrend,
     transactions,
@@ -64,7 +62,6 @@ export default async function ReportsPage({
   ] = await Promise.all([
     getMonthlySummary(supabase, monthStart, monthEnd),
     getIncomePerHourByTreatment(supabase, monthStart, monthEnd),
-    getFollowUpRate(supabase, monthStart, monthEnd),
     getNailsFacialsTrend(supabase, monthStarts6),
     getWeeklyHoursTrend(supabase, weekStarts8),
     getTransactions(supabase, monthStart, monthEnd),
@@ -127,16 +124,6 @@ export default async function ReportsPage({
             ))}
           </div>
         )}
-      </Card>
-
-      <Card className="mt-3">
-        <CardTitle>🔁 שיעור תור חוזר</CardTitle>
-        <p className="text-2xl font-bold text-accent-strong">
-          {Math.round(followUp.rate * 100)}%
-        </p>
-        <p className="text-sm text-text-muted mt-1">
-          {followUp.followUpCount} מתוך {followUp.completedCount} תורים שהושלמו הובילו לתור המשך
-        </p>
       </Card>
 
       <Card className="mt-3">

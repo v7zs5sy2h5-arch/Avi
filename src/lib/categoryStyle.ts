@@ -64,3 +64,23 @@ export function getTreatmentEmoji(
   }
   return getCategoryStyle(category).emoji;
 }
+
+export type CategorySlug = "nails" | "facials";
+
+const slugToCategory: Record<CategorySlug, string> = {
+  nails: NAILS_CATEGORY,
+  facials: FACIALS_CATEGORY,
+};
+
+const categoryToSlug: Record<string, CategorySlug> = {
+  [NAILS_CATEGORY]: "nails",
+  [FACIALS_CATEGORY]: "facials",
+};
+
+export function categoryFromSlug(slug: string): string | null {
+  return slugToCategory[slug as CategorySlug] ?? null;
+}
+
+export function slugFromCategory(category: string): CategorySlug | null {
+  return categoryToSlug[category] ?? null;
+}

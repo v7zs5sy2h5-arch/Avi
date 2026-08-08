@@ -9,9 +9,7 @@ export const LOCAL_USER_EMAIL = "demo@kerenamar.local";
 export type Row = Record<string, unknown>;
 
 export interface Store {
-  clients: Row[];
   treatments: Row[];
-  appointments: Row[];
   treatment_log: Row[];
   product_sales: Row[];
   expense_categories: Row[];
@@ -84,61 +82,22 @@ function buildSeed(): Store {
     { id: t.scarRemoval, user_id: LOCAL_USER_ID, category: "טיפולי פנים", name: "הסרת סרחי עור", description: null, price: null, price_note: "לפי הערכה בייעוץ", duration_minutes: 60, is_series: false, series_size: null, series_price: null, sort_order: 20, created_at: now.toISOString() },
   ];
 
-  // ---- clients ----------------------------------------------------------
-  const c = {
-    michal: uuid(),
-    shira: uuid(),
-    noa: uuid(),
-    talya: uuid(),
-    rachel: uuid(),
-    yael: uuid(),
-  };
-
-  const clients: Row[] = [
-    { id: c.michal, user_id: LOCAL_USER_ID, name: "מיכל לוי", phone: "050-1234567", notes: null, created_at: now.toISOString() },
-    { id: c.shira, user_id: LOCAL_USER_ID, name: "שירה כהן", phone: "052-2345678", notes: "רגישה לחומרי פילינג חזקים", created_at: now.toISOString() },
-    { id: c.noa, user_id: LOCAL_USER_ID, name: "נועה אברהם", phone: "054-3456789", notes: null, created_at: now.toISOString() },
-    { id: c.talya, user_id: LOCAL_USER_ID, name: "טליה מזרחי", phone: null, notes: null, created_at: now.toISOString() },
-    { id: c.rachel, user_id: LOCAL_USER_ID, name: "רחל בן דוד", phone: "053-4567890", notes: null, created_at: now.toISOString() },
-    { id: c.yael, user_id: LOCAL_USER_ID, name: "יעל אזולאי", phone: "050-5678901", notes: "לקוחה חדשה — הגיעה בהמלצה", created_at: now.toISOString() },
-  ];
-
-  // ---- appointments + treatment_log + product_sales ---------------------
-  const appointments: Row[] = [];
+  // ---- treatment_log (already-performed treatments, no scheduling) ------
   const treatmentLog: Row[] = [];
-  const productSales: Row[] = [];
 
-  function addCompleted(opts: {
+  function addLog(opts: {
     daysFromToday: number;
     hour: number;
-    clientId: string;
     treatmentId: string;
     price: number;
     duration: number;
     isPaid?: boolean;
-    followUpOf?: string;
   }): string {
     const id = uuid();
-    appointments.push({
-      id,
-      user_id: LOCAL_USER_ID,
-      client_id: opts.clientId,
-      treatment_id: opts.treatmentId,
-      treatment_name_freetext: null,
-      expected_price: opts.price,
-      starts_at: atTime(opts.daysFromToday, opts.hour),
-      duration_minutes: opts.duration,
-      status: "completed",
-      notes: null,
-      follow_up_of_appointment_id: opts.followUpOf ?? null,
-      created_at: now.toISOString(),
-    });
     const treatment = treatments.find((tr) => tr.id === opts.treatmentId)!;
     treatmentLog.push({
-      id: uuid(),
+      id,
       user_id: LOCAL_USER_ID,
-      appointment_id: id,
-      client_id: opts.clientId,
       treatment_id: opts.treatmentId,
       treatment_name: treatment.name,
       amount: opts.price,
@@ -152,94 +111,49 @@ function buildSeed(): Store {
     return id;
   }
 
-  function addPlanned(opts: {
-    daysFromToday: number;
-    hour: number;
-    clientId: string;
-    treatmentId: string;
-    price: number;
-    duration: number;
-    followUpOf?: string;
-  }): string {
-    const id = uuid();
-    appointments.push({
-      id,
-      user_id: LOCAL_USER_ID,
-      client_id: opts.clientId,
-      treatment_id: opts.treatmentId,
-      treatment_name_freetext: null,
-      expected_price: opts.price,
-      starts_at: atTime(opts.daysFromToday, opts.hour),
-      duration_minutes: opts.duration,
-      status: "planned",
-      notes: null,
-      follow_up_of_appointment_id: opts.followUpOf ?? null,
-      created_at: now.toISOString(),
-    });
-    return id;
-  }
+  // Past 3 weeks: a realistic mix of nails/facials.
+  addLog({ daysFromToday: -21, hour: 10, treatmentId: t.acrylic, price: 300, duration: 60 });
+  addLog({ daysFromToday: -20, hour: 12, treatmentId: t.deepClean, price: 400, duration: 60 });
+  addLog({ daysFromToday: -19, hour: 9, treatmentId: t.lacquer, price: 150, duration: 45 });
+  addLog({ daysFromToday: -18, hour: 15, treatmentId: t.rfExternal, price: 600, duration: 60, isPaid: false });
+  addLog({ daysFromToday: -17, hour: 11, treatmentId: t.brightening, price: 400, duration: 60 });
+  addLog({ daysFromToday: -13, hour: 10, treatmentId: t.acrylic, price: 300, duration: 60 });
+  addLog({ daysFromToday: -12, hour: 13, treatmentId: t.phototherapy, price: 150, duration: 20 });
+  addLog({ daysFromToday: -11, hour: 16, treatmentId: t.meso, price: 500, duration: 50 });
+  addLog({ daysFromToday: -10, hour: 9, treatmentId: t.acrylic, price: 300, duration: 60, isPaid: false });
+  addLog({ daysFromToday: -9, hour: 12, treatmentId: t.lacquer, price: 150, duration: 45 });
+  addLog({ daysFromToday: -8, hour: 14, treatmentId: t.deepClean, price: 400, duration: 60 });
+  addLog({ daysFromToday: -6, hour: 11, treatmentId: t.lacquer, price: 150, duration: 45 });
+  addLog({ daysFromToday: -5, hour: 13, treatmentId: t.rfFace, price: 800, duration: 60 });
 
-  // Past 3 weeks: a realistic mix of nails/facials, mostly completed.
-  const past1 = addCompleted({ daysFromToday: -21, hour: 10, clientId: c.michal, treatmentId: t.acrylic, price: 300, duration: 60 });
-  addPlanned({ daysFromToday: -14, hour: 10, clientId: c.michal, treatmentId: t.acrylic, price: 300, duration: 60, followUpOf: past1 });
-  addCompleted({ daysFromToday: -20, hour: 12, clientId: c.shira, treatmentId: t.deepClean, price: 400, duration: 60 });
-  addCompleted({ daysFromToday: -19, hour: 9, clientId: c.noa, treatmentId: t.lacquer, price: 150, duration: 45 });
-  addCompleted({ daysFromToday: -18, hour: 15, clientId: c.rachel, treatmentId: t.rfExternal, price: 600, duration: 60, isPaid: false });
-  const past2 = addCompleted({ daysFromToday: -17, hour: 11, clientId: c.talya, treatmentId: t.brightening, price: 400, duration: 60 });
-  addPlanned({ daysFromToday: -3, hour: 11, clientId: c.talya, treatmentId: t.brightening, price: 400, duration: 60, followUpOf: past2 });
-  appointments[appointments.length - 1].status = "completed";
-  treatmentLog.push({
-    id: uuid(), user_id: LOCAL_USER_ID, appointment_id: appointments[appointments.length - 1].id,
-    client_id: c.talya, treatment_id: t.brightening, treatment_name: "טיפול הבהרה",
-    amount: 400, duration_minutes: 60, payment_method: "card", is_paid: true,
-    performed_at: atTime(-3, 11), notes: null, created_at: now.toISOString(),
-  });
-
-  addCompleted({ daysFromToday: -13, hour: 10, clientId: c.yael, treatmentId: t.acrylic, price: 300, duration: 60 });
-  addCompleted({ daysFromToday: -12, hour: 13, clientId: c.michal, treatmentId: t.phototherapy, price: 150, duration: 20 });
-  addCompleted({ daysFromToday: -11, hour: 16, clientId: c.shira, treatmentId: t.meso, price: 500, duration: 50 });
-  addCompleted({ daysFromToday: -10, hour: 9, clientId: c.noa, treatmentId: t.acrylic, price: 300, duration: 60, isPaid: false });
-  addCompleted({ daysFromToday: -9, hour: 12, clientId: c.rachel, treatmentId: t.lacquer, price: 150, duration: 45 });
-  addCompleted({ daysFromToday: -8, hour: 14, clientId: c.talya, treatmentId: t.deepClean, price: 400, duration: 60 });
-
-  // No-show / cancelled examples for status-badge variety.
-  const nsId = uuid();
-  appointments.push({
-    id: nsId, user_id: LOCAL_USER_ID, client_id: c.yael, treatment_id: t.lacquer,
-    treatment_name_freetext: null, expected_price: 150, starts_at: atTime(-6, 11),
-    duration_minutes: 45, status: "no_show", notes: null, follow_up_of_appointment_id: null,
-    created_at: now.toISOString(),
-  });
-  const cnId = uuid();
-  appointments.push({
-    id: cnId, user_id: LOCAL_USER_ID, client_id: c.michal, treatment_id: t.rfFace,
-    treatment_name_freetext: null, expected_price: 800, starts_at: atTime(-5, 13),
-    duration_minutes: 60, status: "cancelled", notes: null, follow_up_of_appointment_id: null,
-    created_at: now.toISOString(),
-  });
-
-  // This week: mix of already-completed (earlier today / earlier this
-  // week) and still-planned, so "today" + dashboard have live content.
+  // This week — mix of nails/facials logged so far, weighted toward
+  // facials to demonstrate the "growing facials" goal in a good state.
   const todayOffset = -daysSinceSunday(); // start of this week (Sunday)
-  addCompleted({ daysFromToday: todayOffset + 1, hour: 10, clientId: c.noa, treatmentId: t.deepClean, price: 400, duration: 60 });
-  addCompleted({ daysFromToday: todayOffset + 2, hour: 11, clientId: c.rachel, treatmentId: t.acrylic, price: 300, duration: 60 });
-  addCompleted({ daysFromToday: 0, hour: Math.max(new Date().getHours() - 3, 8), clientId: c.shira, treatmentId: t.lacquer, price: 150, duration: 45, isPaid: false });
-  addPlanned({ daysFromToday: 0, hour: Math.min(new Date().getHours() + 3, 19), clientId: c.talya, treatmentId: t.phototherapy, price: 150, duration: 20 });
-  addPlanned({ daysFromToday: 1, hour: 10, clientId: c.michal, treatmentId: t.acrylic, price: 300, duration: 60 });
-  addPlanned({ daysFromToday: 2, hour: 12, clientId: c.yael, treatmentId: t.deepClean, price: 400, duration: 60 });
-  addPlanned({ daysFromToday: 3, hour: 9, clientId: c.noa, treatmentId: t.lacquer, price: 150, duration: 45 });
-  addPlanned({ daysFromToday: 4, hour: 15, clientId: c.rachel, treatmentId: t.rfNeck, price: 800, duration: 50 });
-
-  // Next week: a couple of planned appointments.
-  addPlanned({ daysFromToday: 8, hour: 10, clientId: c.shira, treatmentId: t.meso, price: 500, duration: 50 });
-  addPlanned({ daysFromToday: 9, hour: 11, clientId: c.talya, treatmentId: t.acrylic, price: 300, duration: 60 });
+  addLog({ daysFromToday: todayOffset + 1, hour: 10, treatmentId: t.deepClean, price: 400, duration: 60 });
+  addLog({ daysFromToday: todayOffset + 2, hour: 11, treatmentId: t.acrylic, price: 300, duration: 60 });
+  addLog({ daysFromToday: todayOffset + 2, hour: 15, treatmentId: t.rfNeck, price: 800, duration: 50 });
+  addLog({
+    daysFromToday: 0,
+    hour: Math.max(new Date().getHours() - 3, 8),
+    treatmentId: t.lacquer,
+    price: 150,
+    duration: 45,
+    isPaid: false,
+  });
+  addLog({
+    daysFromToday: 0,
+    hour: Math.max(new Date().getHours() - 1, 8),
+    treatmentId: t.phototherapy,
+    price: 150,
+    duration: 20,
+  });
 
   // ---- product sales ------------------------------------------------------
-  productSales.push(
-    { id: uuid(), user_id: LOCAL_USER_ID, client_id: c.michal, treatment_log_id: null, product_name: "קרם לחות פנים", amount: 120, is_paid: true, notes: null, sold_at: atTime(-9, 12), created_at: now.toISOString() },
-    { id: uuid(), user_id: LOCAL_USER_ID, client_id: c.shira, treatment_log_id: null, product_name: "סרום ויטמין C", amount: 180, is_paid: false, notes: null, sold_at: atTime(-4, 10), created_at: now.toISOString() },
-    { id: uuid(), user_id: LOCAL_USER_ID, client_id: null, treatment_log_id: null, product_name: "שמן לחיפוי ציפורניים", amount: 60, is_paid: true, notes: "לקוחה מזדמנת", sold_at: atTime(-2, 16), created_at: now.toISOString() },
-  );
+  const productSales: Row[] = [
+    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "קרם לחות פנים", amount: 120, is_paid: true, notes: null, sold_at: atTime(-9, 12), created_at: now.toISOString() },
+    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "סרום ויטמין C", amount: 180, is_paid: false, notes: null, sold_at: atTime(-4, 10), created_at: now.toISOString() },
+    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "שמן לחיפוי ציפורניים", amount: 60, is_paid: true, notes: null, sold_at: atTime(-2, 16), created_at: now.toISOString() },
+  ];
 
   // ---- expense categories + expenses ---------------------------------------
   const ec = {
@@ -273,9 +187,7 @@ function buildSeed(): Store {
   ];
 
   return {
-    clients,
     treatments,
-    appointments,
     treatment_log: treatmentLog,
     product_sales: productSales,
     expense_categories: expenseCategories,

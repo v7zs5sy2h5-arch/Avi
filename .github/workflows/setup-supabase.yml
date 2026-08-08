@@ -50,5 +50,12 @@ jobs:
           DB_URL: ${{ inputs.db_url }}
           LOGIN_EMAIL: ${{ inputs.login_email }}
 
+      - name: Pivot to treatment-tracking only (0003_pivot_treatment_tracking.sql)
+        run: |
+          set -euo pipefail
+          psql "${DB_URL}" -v ON_ERROR_STOP=1 -f supabase/migrations/0003_pivot_treatment_tracking.sql
+        env:
+          DB_URL: ${{ inputs.db_url }}
+
       - name: Done
         run: echo "Supabase setup complete for ${{ inputs.login_email }}"

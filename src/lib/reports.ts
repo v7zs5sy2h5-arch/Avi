@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { FACIALS_CATEGORY } from "@/types/database";
+import { NAILS_CATEGORY, FACIALS_CATEGORY } from "@/types/database";
 
 type Cat = { category: string } | { category: string }[] | null;
 
@@ -139,25 +139,50 @@ export async function getIncomePerHourByTreatment(
     .sort((a, b) => b.perHour - a.perHour);
 }
 
-export async function getWeeklyPlannedMinutes(
+export async function getWeeklyWorkedMinutes(
   supabase: SupabaseClient,
   start: Date,
   end: Date,
 ): Promise<number> {
   const { data } = await supabase
-    .from("appointments")
+    .from("treatment_log")
     .select("duration_minutes")
-    .in("status", ["planned", "completed"])
-    .gte("starts_at", start.toISOString())
-    .lt("starts_at", end.toISOString());
+    .gte("performed_at", start.toISOString())
+    .lt("performed_at", end.toISOString());
 
   return (data ?? []).reduce((s, r) => s + Number(r.duration_minutes), 0);
+}
+
+export interface CategoryCounts {
+  nailsCount: number;
+  facialsCount: number;
+}
+
+export async function getCategoryCounts(
+  supabase: SupabaseClient,
+  start: Date,
+  end: Date,
+): Promise<CategoryCounts> {
+  const { data: logs } = await supabase
+    .from("treatment_log")
+    .select("treatment:treatments(category)")
+    .gte("performed_at", start.toISOString())
+    .lt("performed_at", end.toISOString());
+
+  let nailsCount = 0;
+  let facialsCount = 0;
+  for (const row of logs ?? []) {
+    const category = firstCategory(row.treatment);
+    if (category === NAILS_CATEGORY) nailsCount += 1;
+    else if (category === FACIALS_CATEGORY) facialsCount += 1;
+  }
+
+  return { nailsCount, facialsCount };
 }
 
 export interface FacialsProgress {
   completedCount: number;
   completedRevenue: number;
-  plannedCount: number;
 }
 
 export async function getFacialsWeekProgress(
@@ -165,31 +190,19 @@ export async function getFacialsWeekProgress(
   start: Date,
   end: Date,
 ): Promise<FacialsProgress> {
-  const [{ data: logs }, { data: planned }] = await Promise.all([
-    supabase
-      .from("treatment_log")
-      .select("amount, treatment:treatments(category)")
-      .gte("performed_at", start.toISOString())
-      .lt("performed_at", end.toISOString()),
-    supabase
-      .from("appointments")
-      .select("id, treatment:treatments(category)")
-      .eq("status", "planned")
-      .gte("starts_at", start.toISOString())
-      .lt("starts_at", end.toISOString()),
-  ]);
+  const { data: logs } = await supabase
+    .from("treatment_log")
+    .select("amount, treatment:treatments(category)")
+    .gte("performed_at", start.toISOString())
+    .lt("performed_at", end.toISOString());
 
   const facialsLogs = (logs ?? []).filter(
     (l) => firstCategory(l.treatment) === FACIALS_CATEGORY,
-  );
-  const plannedFacials = (planned ?? []).filter(
-    (p) => firstCategory(p.treatment) === FACIALS_CATEGORY,
   );
 
   return {
     completedCount: facialsLogs.length,
     completedRevenue: facialsLogs.reduce((s, l) => s + Number(l.amount), 0),
-    plannedCount: plannedFacials.length,
   };
 }
 
@@ -261,37 +274,6 @@ export async function getFacialsTreatmentUsage(
   }));
 }
 
-export interface FollowUpRate {
-  rate: number;
-  completedCount: number;
-  followUpCount: number;
-}
-
-export async function getFollowUpRate(
-  supabase: SupabaseClient,
-  start: Date,
-  end: Date,
-): Promise<FollowUpRate> {
-  const { data: completed } = await supabase
-    .from("appointments")
-    .select("id")
-    .eq("status", "completed")
-    .gte("starts_at", start.toISOString())
-    .lt("starts_at", end.toISOString());
-
-  const ids = (completed ?? []).map((c) => c.id as string);
-  if (ids.length === 0) return { rate: 0, completedCount: 0, followUpCount: 0 };
-
-  const { data: followUps } = await supabase
-    .from("appointments")
-    .select("follow_up_of_appointment_id")
-    .in("follow_up_of_appointment_id", ids);
-
-  const distinct = new Set((followUps ?? []).map((f) => f.follow_up_of_appointment_id));
-
-  return { rate: distinct.size / ids.length, completedCount: ids.length, followUpCount: distinct.size };
-}
-
 export interface WeeklyHoursPoint {
   label: string;
   hours: number;
@@ -306,7 +288,7 @@ export async function getWeeklyHoursTrend(
   for (const start of weekStarts) {
     const end = new Date(start);
     end.setDate(end.getDate() + 7);
-    const minutes = await getWeeklyPlannedMinutes(supabase, start, end);
+    const minutes = await getWeeklyWorkedMinutes(supabase, start, end);
     points.push({
       label: start.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }),
       hours: Math.round((minutes / 60) * 10) / 10,
@@ -334,7 +316,7 @@ export async function getNailsFacialsTrend(
         ? monthStarts[i + 1]
         : new Date(start.getFullYear(), start.getMonth() + 1, 1);
     const stats = await getIncomePerHourByCategory(supabase, start, end);
-    const nails = stats.find((s) => s.category === "ציפורניים");
+    const nails = stats.find((s) => s.category === NAILS_CATEGORY);
     const facials = stats.find((s) => s.category === FACIALS_CATEGORY);
     points.push({
       label: start.toLocaleDateString("he-IL", { month: "short" }),

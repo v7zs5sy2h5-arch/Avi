@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PAYMENT_METHOD_LABELS } from "@/types/database";
+import type { PaymentMethod } from "@/types/database";
 
 export interface Transaction {
   id: string;
@@ -18,12 +20,12 @@ export async function getTransactions(
   const [{ data: logs }, { data: sales }, { data: expenses }] = await Promise.all([
     supabase
       .from("treatment_log")
-      .select("id, amount, performed_at, treatment_name, is_paid, client:clients(name)")
+      .select("id, amount, performed_at, treatment_name, payment_method, is_paid")
       .gte("performed_at", start.toISOString())
       .lt("performed_at", end.toISOString()),
     supabase
       .from("product_sales")
-      .select("id, amount, sold_at, product_name, is_paid, client:clients(name)")
+      .select("id, amount, sold_at, product_name, is_paid")
       .gte("sold_at", start.toISOString())
       .lt("sold_at", end.toISOString()),
     supabase
@@ -42,7 +44,7 @@ export async function getTransactions(
       kind: "treatment" as const,
       date: l.performed_at as string,
       label: l.treatment_name as string,
-      subLabel: name(l.client),
+      subLabel: PAYMENT_METHOD_LABELS[l.payment_method as PaymentMethod] ?? null,
       amount: Number(l.amount),
       isPaid: l.is_paid as boolean,
     })),
@@ -51,7 +53,7 @@ export async function getTransactions(
       kind: "product" as const,
       date: s.sold_at as string,
       label: s.product_name as string,
-      subLabel: name(s.client),
+      subLabel: "מכירת מוצר",
       amount: Number(s.amount),
       isPaid: s.is_paid as boolean,
     })),

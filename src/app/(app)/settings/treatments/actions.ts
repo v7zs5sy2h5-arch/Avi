@@ -34,7 +34,8 @@ export async function createTreatment(formData: FormData) {
   });
 
   revalidatePath("/settings/treatments");
-  revalidatePath("/appointments/new");
+  revalidatePath("/log/nails");
+  revalidatePath("/log/facials");
 }
 
 export async function updateTreatment(id: string, formData: FormData) {
@@ -61,7 +62,8 @@ export async function updateTreatment(id: string, formData: FormData) {
     .eq("user_id", user.id);
 
   revalidatePath("/settings/treatments");
-  revalidatePath("/appointments/new");
+  revalidatePath("/log/nails");
+  revalidatePath("/log/facials");
 }
 
 export async function deleteTreatment(id: string) {
@@ -74,5 +76,6 @@ export async function deleteTreatment(id: string) {
   await supabase.from("treatments").delete().eq("id", id).eq("user_id", user.id);
 
   revalidatePath("/settings/treatments");
-  revalidatePath("/appointments/new");
+  revalidatePath("/log/nails");
+  revalidatePath("/log/facials");
 }

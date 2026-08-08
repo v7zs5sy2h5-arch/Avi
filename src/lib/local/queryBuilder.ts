@@ -2,9 +2,7 @@
 // in-memory store in ./store.ts. Implements exactly the subset of the
 // chainable query API this app actually uses (see grep audit): select
 // with embedded relations, eq/gte/lt/lte/gt/in/ilike filters, order,
-// limit, maybeSingle/single, insert/update/delete/upsert, and enough of
-// the appointments-overlap / treatment_log-uniqueness business rules to
-// exercise the same error paths the real Postgres constraints produce.
+// limit, maybeSingle/single, insert/update/delete/upsert.
 
 import { getStore, LOCAL_USER_ID, type Row, type Store } from "./store";
 
@@ -24,17 +22,8 @@ interface RelationDef {
 }
 
 const RELATIONS: Partial<Record<TableName, Record<string, RelationDef>>> = {
-  appointments: {
-    client: { table: "clients", type: "one", localKey: "client_id", foreignKey: "id" },
-    treatment: { table: "treatments", type: "one", localKey: "treatment_id", foreignKey: "id" },
-    treatment_log: { table: "treatment_log", type: "many", localKey: "id", foreignKey: "appointment_id" },
-  },
   treatment_log: {
-    client: { table: "clients", type: "one", localKey: "client_id", foreignKey: "id" },
     treatment: { table: "treatments", type: "one", localKey: "treatment_id", foreignKey: "id" },
-  },
-  product_sales: {
-    client: { table: "clients", type: "one", localKey: "client_id", foreignKey: "id" },
   },
   expenses: {
     category: { table: "expense_categories", type: "one", localKey: "category_id", foreignKey: "id" },
@@ -134,31 +123,6 @@ function matchesFilter(row: Row, f: Filter): boolean {
     }
   }
 }
-
-function intervalsOverlap(a: Row, b: Row): boolean {
-  const occupied = (s: unknown) => s === "planned" || s === "completed";
-  if (!occupied(a.status) || !occupied(b.status)) return false;
-  const aStart = +new Date(a.starts_at as string);
-  const aEnd = aStart + (a.duration_minutes as number) * 60000;
-  const bStart = +new Date(b.starts_at as string);
-  const bEnd = bStart + (b.duration_minutes as number) * 60000;
-  return aStart < bEnd && bStart < aEnd;
-}
-
-function findOverlapConflict(candidates: Row[], others: Row[]): boolean {
-  for (let i = 0; i < candidates.length; i++) {
-    for (const other of others) {
-      if (intervalsOverlap(candidates[i], other)) return true;
-    }
-    for (let j = i + 1; j < candidates.length; j++) {
-      if (intervalsOverlap(candidates[i], candidates[j])) return true;
-    }
-  }
-  return false;
-}
-
-const OVERLAP_ERROR = { code: "23P01", message: "overlapping appointment" };
-const DUPLICATE_ERROR = { code: "23505", message: "duplicate key value" };
 
 type Op = "select" | "insert" | "update" | "delete" | "upsert";
 
@@ -296,19 +260,6 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
         ...item,
       }));
 
-      if (this.table === "appointments") {
-        if (findOverlapConflict(newRows, table)) {
-          return { data: null, error: OVERLAP_ERROR };
-        }
-      }
-      if (this.table === "treatment_log") {
-        for (const row of newRows) {
-          if (table.some((r) => r.appointment_id === row.appointment_id)) {
-            return { data: null, error: DUPLICATE_ERROR };
-          }
-        }
-      }
-
       table.push(...newRows);
       const projected = newRows.map((r) => project(r, this.table, this.selectStr)) as T[];
       if (this.singleMode === "single" || this.singleMode === "maybeSingle") {
@@ -319,13 +270,6 @@ export class LocalQueryBuilder<T = Row> implements PromiseLike<{ data: T | T[] |
 
     if (this.op === "update") {
       const matches = table.filter((r) => this.filters.every((f) => matchesFilter(r, f)));
-      if (this.table === "appointments" && this.payload) {
-        const merged = matches.map((m) => ({ ...m, ...this.payload }));
-        const others = table.filter((r) => !matches.some((m) => m.id === r.id));
-        if (findOverlapConflict(merged, others)) {
-          return { data: null, error: OVERLAP_ERROR };
-        }
-      }
       for (const row of matches) Object.assign(row, this.payload);
       const projected = matches.map((r) => project(r, this.table, this.selectStr)) as T[];
       return { data: projected, error: null };
