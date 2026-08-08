@@ -11,11 +11,12 @@ import {
   getFacialsWeekComparison,
   getFacialsTreatmentUsage,
   getCategoryCounts,
+  getPaymentMethodBreakdown,
 } from "@/lib/reports";
 import { weekStart, isoDate } from "@/lib/dates";
 import { cn, formatCurrency, minutesToHm } from "@/lib/utils";
 import { getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
-import { FACIALS_CATEGORY, NAILS_CATEGORY } from "@/types/database";
+import { FACIALS_CATEGORY, NAILS_CATEGORY, PAYMENT_METHOD_LABELS } from "@/types/database";
 import type { WeeklyGoal } from "@/types/database";
 
 export default async function DashboardPage({
@@ -43,6 +44,7 @@ export default async function DashboardPage({
     facialsUsage,
     todayCounts,
     weekCounts,
+    todayPayments,
     { data: goal },
   ] = await Promise.all([
     getMonthlySummary(supabase, monthStart, monthEnd),
@@ -53,12 +55,15 @@ export default async function DashboardPage({
     getFacialsTreatmentUsage(supabase, wStart, wEnd),
     getCategoryCounts(supabase, todayStart, todayEnd),
     getCategoryCounts(supabase, wStart, wEnd),
+    getPaymentMethodBreakdown(supabase, todayStart, todayEnd),
     supabase
       .from("weekly_goals")
       .select("*")
       .eq("week_start", isoDate(wStart))
       .maybeSingle<WeeklyGoal>(),
   ]);
+
+  const todayTotal = todayPayments.reduce((s, p) => s + p.amount, 0);
 
   const nailsStat = perHour.find((s) => s.category === NAILS_CATEGORY);
   const facialsStat = perHour.find((s) => s.category === FACIALS_CATEGORY);
@@ -132,6 +137,35 @@ export default async function DashboardPage({
       </div>
 
       <section className="mt-5">
+        <Card className="gradient-header border-accent-soft">
+          <CardTitle>💵 סיכום היום — עד עכשיו</CardTitle>
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm text-text-muted">סה&quot;כ היום</span>
+            <span className="text-2xl font-bold text-accent-strong">
+              {formatCurrency(todayTotal)}
+            </span>
+          </div>
+          {todayTotal === 0 ? (
+            <p className="mt-2 text-sm text-text-muted">עוד לא נכנס כסף היום</p>
+          ) : (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {todayPayments
+                .filter((p) => p.amount > 0)
+                .map((p) => (
+                  <div
+                    key={p.method}
+                    className="flex items-center justify-between rounded-xl bg-surface px-3 py-2 text-sm shadow-sm shadow-black/[0.03]"
+                  >
+                    <span className="text-text-muted">{PAYMENT_METHOD_LABELS[p.method]}</span>
+                    <span className="font-semibold">{formatCurrency(p.amount)}</span>
+                  </div>
+                ))}
+            </div>
+          )}
+        </Card>
+      </section>
+
+      <section className="mt-3">
         <Card>
           <CardTitle>⚖️ מאזן השבוע — ציפורניים מול טיפולי פנים</CardTitle>
           {weekTotal === 0 ? (

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import type { PaymentMethod } from "@/types/database";
 
 export interface FormActionState {
   error?: string;
@@ -20,6 +21,7 @@ export async function createProductSale(
 
   const productName = String(formData.get("product_name") ?? "").trim();
   const amount = Number(formData.get("amount") ?? 0);
+  const paymentMethod = String(formData.get("payment_method") ?? "cash") as PaymentMethod;
   const isPaid = formData.get("is_paid") === "on";
   const notes = String(formData.get("notes") ?? "").trim() || null;
 
@@ -30,6 +32,7 @@ export async function createProductSale(
     user_id: user.id,
     product_name: productName,
     amount,
+    payment_method: paymentMethod,
     is_paid: isPaid,
     notes,
     sold_at: new Date().toISOString(),

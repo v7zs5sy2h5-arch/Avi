@@ -36,6 +36,7 @@ export interface ProductSale {
   treatment_log_id: string | null;
   product_name: string;
   amount: number;
+  payment_method: PaymentMethod;
   is_paid: boolean;
   notes: string | null;
   sold_at: string;

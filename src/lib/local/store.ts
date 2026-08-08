@@ -150,9 +150,9 @@ function buildSeed(): Store {
 
   // ---- product sales ------------------------------------------------------
   const productSales: Row[] = [
-    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "קרם לחות פנים", amount: 120, is_paid: true, notes: null, sold_at: atTime(-9, 12), created_at: now.toISOString() },
-    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "סרום ויטמין C", amount: 180, is_paid: false, notes: null, sold_at: atTime(-4, 10), created_at: now.toISOString() },
-    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "שמן לחיפוי ציפורניים", amount: 60, is_paid: true, notes: null, sold_at: atTime(-2, 16), created_at: now.toISOString() },
+    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "קרם לחות פנים", amount: 120, payment_method: "card", is_paid: true, notes: null, sold_at: atTime(-9, 12), created_at: now.toISOString() },
+    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "סרום ויטמין C", amount: 180, payment_method: "cash", is_paid: false, notes: null, sold_at: atTime(-4, 10), created_at: now.toISOString() },
+    { id: uuid(), user_id: LOCAL_USER_ID, treatment_log_id: null, product_name: "שמן לחיפוי ציפורניים", amount: 60, payment_method: "bit", is_paid: true, notes: null, sold_at: atTime(-2, 16), created_at: now.toISOString() },
   ];
 
   // ---- expense categories + expenses ---------------------------------------

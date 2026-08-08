@@ -11,7 +11,9 @@ import {
   getWeeklyHoursTrend,
   getDailyBreakdown,
   getPeriodStats,
+  getPaymentMethodBreakdown,
 } from "@/lib/reports";
+import { PAYMENT_METHOD_LABELS } from "@/types/database";
 import { getTransactions } from "@/lib/transactions";
 import { weekStart } from "@/lib/dates";
 import { NailsFacialsChart } from "@/components/charts/NailsFacialsChart";
@@ -66,6 +68,7 @@ export default async function ReportsPage({
     dailyBreakdown,
     currentPeriod,
     previousPeriod,
+    paymentBreakdown,
     transactions,
     { data: goals },
   ] = await Promise.all([
@@ -76,6 +79,7 @@ export default async function ReportsPage({
     getDailyBreakdown(supabase, monthStart, monthEnd),
     getPeriodStats(supabase, monthStart, monthEnd),
     getPeriodStats(supabase, prevMonth, monthStart),
+    getPaymentMethodBreakdown(supabase, monthStart, monthEnd),
     getTransactions(supabase, monthStart, monthEnd),
     supabase
       .from("weekly_goals")
@@ -84,6 +88,8 @@ export default async function ReportsPage({
       .limit(10)
       .returns<WeeklyGoal[]>(),
   ]);
+
+  const paymentTotal = paymentBreakdown.reduce((s, p) => s + p.amount, 0);
 
   const filteredTransactions =
     kind === "all" ? transactions : transactions.filter((t) => t.kind === kind);
@@ -115,6 +121,26 @@ export default async function ReportsPage({
             <Row label="רווח נקי" value={formatCurrency(summary.profit)} strong accent />
           </div>
         </div>
+      </Card>
+
+      <Card className="mt-3">
+        <CardTitle>💳 פילוח לפי אמצעי תשלום (החודש)</CardTitle>
+        {paymentTotal === 0 ? (
+          <p className="text-sm text-text-muted">אין נתונים החודש</p>
+        ) : (
+          <div className="space-y-1.5 text-sm">
+            {paymentBreakdown.map((p) => (
+              <Row
+                key={p.method}
+                label={PAYMENT_METHOD_LABELS[p.method]}
+                value={formatCurrency(p.amount)}
+              />
+            ))}
+            <div className="border-t border-border-soft mt-2 pt-2">
+              <Row label="סה&quot;כ" value={formatCurrency(paymentTotal)} strong accent />
+            </div>
+          </div>
+        )}
       </Card>
 
       <Card className="mt-3">

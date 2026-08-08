@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NAILS_CATEGORY, FACIALS_CATEGORY } from "@/types/database";
+import type { PaymentMethod } from "@/types/database";
 import { isoDate } from "@/lib/dates";
 
 type Cat = { category: string } | { category: string }[] | null;
@@ -57,6 +58,44 @@ export async function getMonthlySummary(
     totalExpenses,
     profit: totalIncome - totalExpenses,
   };
+}
+
+export interface PaymentMethodBreakdown {
+  method: PaymentMethod;
+  amount: number;
+}
+
+const PAYMENT_METHODS: PaymentMethod[] = ["cash", "card", "bit", "transfer"];
+
+export async function getPaymentMethodBreakdown(
+  supabase: SupabaseClient,
+  start: Date,
+  end: Date,
+): Promise<PaymentMethodBreakdown[]> {
+  const [{ data: logs }, { data: sales }] = await Promise.all([
+    supabase
+      .from("treatment_log")
+      .select("amount, payment_method")
+      .eq("is_paid", true)
+      .gte("performed_at", start.toISOString())
+      .lt("performed_at", end.toISOString()),
+    supabase
+      .from("product_sales")
+      .select("amount, payment_method")
+      .eq("is_paid", true)
+      .gte("sold_at", start.toISOString())
+      .lt("sold_at", end.toISOString()),
+  ]);
+
+  const totals: Record<PaymentMethod, number> = { cash: 0, card: 0, bit: 0, transfer: 0 };
+  for (const row of logs ?? []) {
+    totals[row.payment_method as PaymentMethod] += Number(row.amount);
+  }
+  for (const row of sales ?? []) {
+    totals[row.payment_method as PaymentMethod] += Number(row.amount);
+  }
+
+  return PAYMENT_METHODS.map((method) => ({ method, amount: totals[method] }));
 }
 
 export interface CategoryStat {
