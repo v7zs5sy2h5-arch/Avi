@@ -1,8 +1,9 @@
 name: Deploy to GitHub Pages
 
+# Manual-only: auto-deploy on push now lives in deploy-hachlama-app.yml.
+# Both workflows publish to the same "github-pages" site, so only one
+# should run automatically or they'd race to overwrite each other.
 on:
-  push:
-    branches: ["claude/attendance-netlify-deploy-2fixs4"]
   workflow_dispatch:
 
 permissions:
