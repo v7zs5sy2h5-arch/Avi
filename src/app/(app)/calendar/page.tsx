@@ -3,33 +3,18 @@ import { addDays } from "date-fns";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/layout/Header";
 import { weekStart, isoDate } from "@/lib/dates";
-import { formatTime, formatCurrency, cn } from "@/lib/utils";
+import { formatTime, cn } from "@/lib/utils";
 import { getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
-import { StatusBadge } from "@/components/StatusBadge";
-import { ChevronRight, ChevronLeft, Clock } from "lucide-react";
-import { NAILS_CATEGORY, FACIALS_CATEGORY } from "@/types/database";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 import type { AppointmentWithRelations } from "@/types/database";
 
 const BUSY_THRESHOLD_MINUTES = 6 * 60;
 const WEEKDAY_LABELS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
 const ROW_HEIGHT = 52;
 const HEADER_HEIGHT = 44;
-const COL_WIDTH = 72;
 const HOUR_COL_WIDTH = 34;
 const MIN_BLOCK_HEIGHT = 24;
 type ViewMode = "day" | "week" | "month";
-
-function dotClass(category: string): string {
-  if (category === NAILS_CATEGORY) return "bg-nails";
-  if (category === FACIALS_CATEGORY) return "bg-facials";
-  return "bg-accent";
-}
-
-function edgeBorderClass(category: string): string {
-  if (category === NAILS_CATEGORY) return "border-r-nails";
-  if (category === FACIALS_CATEGORY) return "border-r-facials";
-  return "border-r-accent";
-}
 
 export default async function CalendarPage({
   searchParams,
@@ -94,23 +79,37 @@ export default async function CalendarPage({
   }
   const hours = Array.from({ length: maxHour - minHour }, (_, i) => minHour + i);
 
-  const selectedList = (byDay.get(selected) ?? []).sort(
-    (a, b) => +new Date(a.starts_at) - +new Date(b.starts_at),
-  );
+  const gridDays = view === "day" ? [new Date(selected)] : days;
 
   const prevWeek = isoDate(addDays(weekStartDate, -7));
   const nextWeek = isoDate(addDays(weekStartDate, 7));
+  const prevDay = isoDate(addDays(new Date(selected), -1));
+  const nextDay = isoDate(addDays(new Date(selected), 1));
   const monthAnchor = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
   const prevMonth = isoDate(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() - 1, 1));
   const nextMonth = isoDate(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 1));
 
   const navPrevHref =
-    view === "month" ? `/calendar?date=${prevMonth}&view=month` : `/calendar?date=${prevWeek}&view=${view}`;
+    view === "month"
+      ? `/calendar?date=${prevMonth}&view=month`
+      : view === "day"
+        ? `/calendar?date=${prevDay}&view=day`
+        : `/calendar?date=${prevWeek}&view=week`;
   const navNextHref =
-    view === "month" ? `/calendar?date=${nextMonth}&view=month` : `/calendar?date=${nextWeek}&view=${view}`;
+    view === "month"
+      ? `/calendar?date=${nextMonth}&view=month`
+      : view === "day"
+        ? `/calendar?date=${nextDay}&view=day`
+        : `/calendar?date=${nextWeek}&view=week`;
   const navLabel =
     view === "month" ? (
       monthAnchor.toLocaleDateString("he-IL", { month: "long", year: "numeric" })
+    ) : view === "day" ? (
+      new Date(selected).toLocaleDateString("he-IL", {
+        weekday: "long",
+        day: "2-digit",
+        month: "2-digit",
+      })
     ) : (
       <>
         {days[0].toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" })}
@@ -174,117 +173,175 @@ export default async function CalendarPage({
       </div>
 
       {view === "day" ? (
-        <>
-          <div className="flex gap-1.5 overflow-x-auto px-4 py-3">
-            {days.map((day, i) => {
-              const key = isoDate(day);
-              const isSelected = key === selected;
-              const isToday = key === todayKey;
-              const count = byDay.get(key)?.length ?? 0;
-              const busy = (minutesByDay.get(key) ?? 0) > BUSY_THRESHOLD_MINUTES;
-              return (
-                <Link
-                  key={key}
-                  href={`/calendar?date=${key}&view=day`}
+        <div className="flex gap-1.5 overflow-x-auto px-4 pt-2 pb-3">
+          {days.map((day, i) => {
+            const key = isoDate(day);
+            const isSelected = key === selected;
+            const isToday = key === todayKey;
+            const count = byDay.get(key)?.length ?? 0;
+            const busy = (minutesByDay.get(key) ?? 0) > BUSY_THRESHOLD_MINUTES;
+            return (
+              <Link
+                key={key}
+                href={`/calendar?date=${key}&view=day`}
+                className={cn(
+                  "flex min-w-[48px] flex-col items-center gap-1 rounded-2xl px-2 py-2 transition-colors",
+                  isSelected ? "bg-surface-soft" : "",
+                )}
+              >
+                <span className="text-[11px] text-text-muted">{WEEKDAY_LABELS[i]}</span>
+                <span
                   className={cn(
-                    "flex min-w-[52px] flex-col items-center gap-1 rounded-2xl border-2 px-2 py-2.5 transition-colors",
+                    "flex h-8 w-8 items-center justify-center rounded-full text-[15px] font-bold",
                     isSelected
-                      ? "border-accent gradient-primary text-accent-foreground shadow-sm shadow-accent/25"
+                      ? "gradient-primary text-accent-foreground shadow-sm shadow-accent/25"
                       : isToday
-                        ? "border-accent-soft bg-accent-soft/60 text-text"
-                        : "border-border-soft bg-surface text-text",
+                        ? "text-accent-strong"
+                        : "text-text",
                   )}
                 >
-                  <span className="text-[11px] opacity-80">{WEEKDAY_LABELS[i]}</span>
-                  <span
-                    className={cn(
-                      "text-base font-bold",
-                      isToday && !isSelected ? "text-accent-strong" : "",
-                    )}
-                  >
-                    {day.getDate()}
-                  </span>
-                  <span className="flex h-1.5 items-center">
-                    {count > 0 ? (
-                      <span
-                        className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          isSelected ? "bg-accent-foreground" : "bg-accent",
-                        )}
-                      />
-                    ) : null}
-                  </span>
-                  {busy ? <span className="text-[9px] leading-none">עמוס 🔥</span> : null}
-                </Link>
-              );
-            })}
-          </div>
+                  {day.getDate()}
+                </span>
+                <span className="flex h-1.5 items-center">
+                  {count > 0 ? (
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                  ) : null}
+                </span>
+                {busy ? <span className="text-[9px] leading-none">🔥</span> : null}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
 
-          <div className="space-y-2.5 px-4 pb-6">
-            {selectedList.length === 0 ? (
-              <div className="rounded-3xl border border-border-soft bg-surface py-10 text-center shadow-sm shadow-black/[0.03]">
-                <p className="text-2xl">🌿</p>
-                <p className="mt-1 text-sm text-text-muted">אין תורים ביום זה</p>
+      {view === "month" ? (
+        <div className="mx-4 mt-1 mb-6 overflow-hidden rounded-2xl border border-border-soft bg-surface">
+          <div className="grid grid-cols-7 border-b border-border-soft">
+            {WEEKDAY_LABELS.map((label) => (
+              <div key={label} className="py-2 text-center text-[11px] text-text-muted">
+                {label}
               </div>
-            ) : (
-              selectedList.map((appt) => <AppointmentRow key={appt.id} appt={appt} />)
-            )}
+            ))}
           </div>
-        </>
-      ) : view === "week" ? (
-        <div className="mx-4 mt-2 mb-6 overflow-hidden rounded-3xl border border-border-soft bg-surface shadow-sm shadow-black/[0.04]">
+          {monthWeeks.map((week, wi) => (
+            <div key={wi} className="grid grid-cols-7">
+              {week.map((day) => {
+                const key = isoDate(day);
+                const isToday = key === todayKey;
+                const inMonth = day.getMonth() === currentMonth;
+                const list = (byDay.get(key) ?? []).sort(
+                  (a, b) => +new Date(a.starts_at) - +new Date(b.starts_at),
+                );
+                const visible = list.slice(0, 2);
+                const extra = list.length - visible.length;
+                return (
+                  <Link
+                    key={key}
+                    href={`/calendar?date=${key}&view=day`}
+                    className="min-h-[74px] border-b border-l border-border-soft/70 p-1 last:border-l-0 [&:nth-child(7n)]:border-l-0"
+                  >
+                    <span
+                      className={cn(
+                        "flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-semibold",
+                        isToday
+                          ? "gradient-primary text-accent-foreground"
+                          : !inMonth
+                            ? "text-text-muted/40"
+                            : "text-text",
+                      )}
+                    >
+                      {day.getDate()}
+                    </span>
+                    <div className="mt-0.5 space-y-0.5">
+                      {visible.map((appt) => {
+                        const style = getCategoryStyle(appt.treatment?.category ?? "");
+                        return (
+                          <div
+                            key={appt.id}
+                            className={cn(
+                              "truncate rounded px-1 py-[1px] text-[9px] font-medium leading-tight",
+                              style.solidBg,
+                              style.solidText,
+                            )}
+                          >
+                            {formatTime(appt.starts_at)}
+                          </div>
+                        );
+                      })}
+                      {extra > 0 ? (
+                        <div className="px-1 text-[9px] text-text-muted">+{extra}</div>
+                      ) : null}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mx-4 mt-1 mb-6 overflow-hidden rounded-2xl border border-border-soft bg-surface">
           <div className="flex">
             <div
-              className="shrink-0 border-l border-border-soft/70 bg-surface-soft/50"
+              className="shrink-0 border-l border-border-soft"
               style={{ width: HOUR_COL_WIDTH }}
             >
-              <div style={{ height: HEADER_HEIGHT }} className="border-b border-border-soft/60" />
+              <div style={{ height: HEADER_HEIGHT }} className="border-b border-border-soft" />
               {hours.map((h) => (
                 <div key={h} style={{ height: ROW_HEIGHT }} className="relative">
-                  <span className="absolute -top-2 inset-x-0 text-center text-[10px] font-medium text-text-muted">
+                  <span className="absolute -top-2 inset-x-0 text-center text-[10px] text-text-muted">
                     {h}
                   </span>
                 </div>
               ))}
             </div>
-            <div className="flex-1 overflow-x-auto">
-              <div className="flex" style={{ width: days.length * COL_WIDTH }}>
-                {days.map((day, i) => {
+            <div className={cn("flex-1", view === "week" ? "overflow-x-auto" : "")}>
+              <div
+                className="flex"
+                style={view === "week" ? { width: gridDays.length * 68 } : undefined}
+              >
+                {gridDays.map((day, i) => {
                   const key = isoDate(day);
                   const isToday = key === todayKey;
                   const list = byDay.get(key) ?? [];
                   return (
                     <div
                       key={key}
-                      className="shrink-0 border-l border-border-soft/40 last:border-l-0"
-                      style={{ width: COL_WIDTH }}
+                      className={cn(
+                        "shrink-0 border-l border-border-soft last:border-l-0",
+                        view === "day" ? "flex-1" : "",
+                      )}
+                      style={view === "week" ? { width: 68 } : undefined}
                     >
-                      <Link
-                        href={`/calendar?date=${key}&view=day`}
-                        className="flex flex-col items-center justify-center gap-0.5 border-b border-border-soft/60"
-                        style={{ height: HEADER_HEIGHT }}
-                      >
-                        <span className="text-[10px] text-text-muted">{WEEKDAY_LABELS[i]}</span>
-                        <span
-                          className={cn(
-                            "flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold",
-                            isToday
-                              ? "gradient-primary text-accent-foreground shadow-sm shadow-accent/25"
-                              : "text-text",
-                          )}
+                      {view === "week" ? (
+                        <Link
+                          href={`/calendar?date=${key}&view=day`}
+                          className="flex flex-col items-center justify-center gap-0.5 border-b border-border-soft"
+                          style={{ height: HEADER_HEIGHT }}
                         >
-                          {day.getDate()}
-                        </span>
-                      </Link>
+                          <span className="text-[10px] text-text-muted">{WEEKDAY_LABELS[i]}</span>
+                          <span
+                            className={cn(
+                              "flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold",
+                              isToday
+                                ? "gradient-primary text-accent-foreground"
+                                : "text-text",
+                            )}
+                          >
+                            {day.getDate()}
+                          </span>
+                        </Link>
+                      ) : (
+                        <div
+                          style={{ height: HEADER_HEIGHT }}
+                          className="border-b border-border-soft"
+                        />
+                      )}
                       <div className="relative" style={{ height: hours.length * ROW_HEIGHT }}>
                         {hours.map((h, hi) => (
                           <div
                             key={h}
-                            className={cn(
-                              "absolute inset-x-0 border-t border-border-soft/40",
-                              hi % 2 === 1 && "bg-surface-soft/40",
-                            )}
-                            style={{ top: hi * ROW_HEIGHT, height: ROW_HEIGHT }}
+                            className="absolute inset-x-0 border-t border-border-soft/70"
+                            style={{ top: hi * ROW_HEIGHT }}
                           />
                         ))}
                         {isToday && nowOffset != null ? (
@@ -292,8 +349,8 @@ export default async function CalendarPage({
                             className="absolute inset-x-0 z-10 flex items-center"
                             style={{ top: nowOffset }}
                           >
-                            <span className="h-2 w-2 shrink-0 rounded-full bg-warning shadow" />
-                            <span className="h-0.5 flex-1 bg-warning" />
+                            <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-warning shadow" />
+                            <span className="h-[2px] flex-1 bg-warning" />
                           </div>
                         ) : null}
                         {list.map((appt) => {
@@ -315,10 +372,9 @@ export default async function CalendarPage({
                               key={appt.id}
                               href={`/appointments/${appt.id}`}
                               className={cn(
-                                "absolute inset-x-1 overflow-hidden rounded-lg border-r-[3px] px-1.5 py-0.5 text-[10px] leading-tight shadow-sm shadow-black/[0.05]",
-                                style.bg,
-                                style.text,
-                                edgeBorderClass(category),
+                                "absolute inset-x-1 overflow-hidden rounded-md px-1.5 py-0.5 text-[11px] leading-tight shadow-sm",
+                                style.solidBg,
+                                style.solidText,
                               )}
                               style={{ top, height }}
                             >
@@ -326,7 +382,9 @@ export default async function CalendarPage({
                                 <span aria-hidden>{emoji}</span> {formatTime(appt.starts_at)}
                               </div>
                               {height > 32 ? (
-                                <div className="truncate font-medium">{appt.client?.name}</div>
+                                <div className="truncate font-medium opacity-95">
+                                  {appt.client?.name}
+                                </div>
                               ) : null}
                             </Link>
                           );
@@ -339,91 +397,7 @@ export default async function CalendarPage({
             </div>
           </div>
         </div>
-      ) : (
-        <div className="mx-4 mt-2 mb-6 overflow-hidden rounded-3xl border border-border-soft bg-surface shadow-sm shadow-black/[0.04]">
-          <div className="grid grid-cols-7 bg-surface-soft/60 py-2">
-            {WEEKDAY_LABELS.map((label) => (
-              <div key={label} className="text-center text-[11px] font-semibold text-text-muted">
-                {label}
-              </div>
-            ))}
-          </div>
-          <div className="space-y-1 p-2">
-            {monthWeeks.map((week, wi) => (
-              <div key={wi} className="grid grid-cols-7 gap-1">
-                {week.map((day) => {
-                  const key = isoDate(day);
-                  const isToday = key === todayKey;
-                  const inMonth = day.getMonth() === currentMonth;
-                  const list = byDay.get(key) ?? [];
-                  const categories = Array.from(
-                    new Set(list.map((a) => a.treatment?.category ?? "אחר")),
-                  ).slice(0, 4);
-                  return (
-                    <Link
-                      key={key}
-                      href={`/calendar?date=${key}&view=day`}
-                      className="flex flex-col items-center gap-1 rounded-xl py-1.5 transition-colors hover:bg-surface-soft"
-                    >
-                      <span
-                        className={cn(
-                          "flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold",
-                          isToday
-                            ? "gradient-primary text-accent-foreground shadow-sm shadow-accent/25"
-                            : !inMonth
-                              ? "text-text-muted/40"
-                              : "text-text",
-                        )}
-                      >
-                        {day.getDate()}
-                      </span>
-                      <span className="flex h-1.5 items-center gap-0.5">
-                        {categories.map((c, ci) => (
-                          <span key={ci} className={cn("h-1.5 w-1.5 rounded-full", dotClass(c))} />
-                        ))}
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
       )}
     </div>
-  );
-}
-
-function AppointmentRow({ appt }: { appt: AppointmentWithRelations }) {
-  const style = getCategoryStyle(appt.treatment?.category ?? "");
-  const emoji = getTreatmentEmoji(
-    appt.treatment?.name ?? appt.treatment_name_freetext,
-    appt.treatment?.category ?? "",
-  );
-  return (
-    <Link
-      href={`/appointments/${appt.id}`}
-      className="card-interactive flex items-center gap-3 rounded-2xl border border-border-soft bg-surface p-3.5 shadow-sm shadow-black/[0.03]"
-    >
-      <div
-        className={cn(
-          "flex flex-col items-center justify-center w-14 shrink-0 rounded-xl py-1.5",
-          style.bg,
-          style.text,
-        )}
-      >
-        <Clock size={16} className="mb-0.5" />
-        <span className="text-sm font-bold">{formatTime(appt.starts_at)}</span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="truncate text-[15px] font-semibold">{appt.client?.name}</p>
-        <p className="truncate text-sm text-text-muted">
-          <span aria-hidden>{emoji}</span>{" "}
-          {appt.treatment?.name ?? appt.treatment_name_freetext}
-          {appt.expected_price != null ? ` · ${formatCurrency(appt.expected_price)}` : ""}
-        </p>
-      </div>
-      <StatusBadge status={appt.status} />
-    </Link>
   );
 }

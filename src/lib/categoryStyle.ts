@@ -5,6 +5,8 @@ export interface CategoryStyle {
   text: string;
   bg: string;
   border: string;
+  solidBg: string;
+  solidText: string;
 }
 
 const styles: Record<string, CategoryStyle> = {
@@ -13,12 +15,16 @@ const styles: Record<string, CategoryStyle> = {
     text: "text-nails",
     bg: "bg-nails-bg",
     border: "border-nails",
+    solidBg: "bg-nails",
+    solidText: "text-white",
   },
   [FACIALS_CATEGORY]: {
     emoji: "✨",
     text: "text-facials",
     bg: "bg-facials-bg",
     border: "border-facials",
+    solidBg: "bg-facials",
+    solidText: "text-white",
   },
 };
 
@@ -27,6 +33,8 @@ const fallback: CategoryStyle = {
   text: "text-accent-strong",
   bg: "bg-accent-soft",
   border: "border-accent",
+  solidBg: "bg-accent",
+  solidText: "text-accent-foreground",
 };
 
 export function getCategoryStyle(category: string): CategoryStyle {
