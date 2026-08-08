@@ -9,11 +9,14 @@ import {
   getIncomePerHourByTreatment,
   getNailsFacialsTrend,
   getWeeklyHoursTrend,
+  getDailyBreakdown,
+  getPeriodStats,
 } from "@/lib/reports";
 import { getTransactions } from "@/lib/transactions";
 import { weekStart } from "@/lib/dates";
 import { NailsFacialsChart } from "@/components/charts/NailsFacialsChart";
 import { WeeklyHoursChart } from "@/components/charts/WeeklyHoursChart";
+import { MonthCalendarGrid } from "@/components/reports/MonthCalendarGrid";
 import type { WeeklyGoal } from "@/types/database";
 
 function parseMonth(param?: string) {
@@ -41,8 +44,8 @@ export default async function ReportsPage({
 
   const supabase = await createClient();
 
-  const monthStarts6 = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(monthStart.getFullYear(), monthStart.getMonth() - 5 + i, 1);
+  const monthStarts12 = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(monthStart.getFullYear(), monthStart.getMonth() - 11 + i, 1);
     return d;
   });
 
@@ -52,18 +55,27 @@ export default async function ReportsPage({
     return d;
   });
 
+  const prevMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
+  const nextMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+
   const [
     summary,
     treatmentStats,
     nailsFacialsTrend,
     weeklyHoursTrend,
+    dailyBreakdown,
+    currentPeriod,
+    previousPeriod,
     transactions,
     { data: goals },
   ] = await Promise.all([
     getMonthlySummary(supabase, monthStart, monthEnd),
     getIncomePerHourByTreatment(supabase, monthStart, monthEnd),
-    getNailsFacialsTrend(supabase, monthStarts6),
+    getNailsFacialsTrend(supabase, monthStarts12),
     getWeeklyHoursTrend(supabase, weekStarts8),
+    getDailyBreakdown(supabase, monthStart, monthEnd),
+    getPeriodStats(supabase, monthStart, monthEnd),
+    getPeriodStats(supabase, prevMonth, monthStart),
     getTransactions(supabase, monthStart, monthEnd),
     supabase
       .from("weekly_goals")
@@ -75,9 +87,6 @@ export default async function ReportsPage({
 
   const filteredTransactions =
     kind === "all" ? transactions : transactions.filter((t) => t.kind === kind);
-
-  const prevMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
-  const nextMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
 
   return (
     <div className="px-4">
@@ -109,6 +118,40 @@ export default async function ReportsPage({
       </Card>
 
       <Card className="mt-3">
+        <CardTitle>📈 התקדמות מהחודש הקודם</CardTitle>
+        <div className="space-y-2.5">
+          <ProgressRow
+            label="✨ טיפולי פנים"
+            current={currentPeriod.facialsCount}
+            previous={previousPeriod.facialsCount}
+            unit=""
+            goodDirection="up"
+          />
+          <ProgressRow
+            label="💅 ציפורניים"
+            current={currentPeriod.nailsCount}
+            previous={previousPeriod.nailsCount}
+            unit=""
+            goodDirection="down"
+          />
+          <ProgressRow
+            label="💰 הכנסה"
+            current={currentPeriod.income}
+            previous={previousPeriod.income}
+            unit="currency"
+            goodDirection="up"
+          />
+          <ProgressRow
+            label="⏱️ שעות עבודה"
+            current={currentPeriod.hours}
+            previous={previousPeriod.hours}
+            unit="hours"
+            goodDirection="down"
+          />
+        </div>
+      </Card>
+
+      <Card className="mt-3">
         <CardTitle>📊 הכנסה לשעת עבודה לפי טיפול</CardTitle>
         {treatmentStats.length === 0 ? (
           <p className="text-sm text-text-muted">אין נתונים החודש</p>
@@ -127,7 +170,12 @@ export default async function ReportsPage({
       </Card>
 
       <Card className="mt-3">
-        <CardTitle>💅✨ ציפורניים מול טיפולי פנים — מגמה</CardTitle>
+        <CardTitle>📅 פירוט יומי — {monthStart.toLocaleDateString("he-IL", { month: "long" })}</CardTitle>
+        <MonthCalendarGrid monthStart={monthStart} breakdown={dailyBreakdown} />
+      </Card>
+
+      <Card className="mt-3">
+        <CardTitle>💅✨ ציפורניים מול טיפולי פנים — מגמה שנתית</CardTitle>
         <NailsFacialsChart data={nailsFacialsTrend} />
       </Card>
 
@@ -233,6 +281,52 @@ function Row({
       >
         {value}
       </span>
+    </div>
+  );
+}
+
+function ProgressRow({
+  label,
+  current,
+  previous,
+  unit,
+  goodDirection,
+}: {
+  label: string;
+  current: number;
+  previous: number;
+  unit: "" | "currency" | "hours";
+  goodDirection: "up" | "down";
+}) {
+  const pct =
+    previous === 0
+      ? current > 0
+        ? 100
+        : 0
+      : Math.round(((current - previous) / previous) * 100);
+  const improved = goodDirection === "up" ? pct > 0 : pct < 0;
+  const worsened = goodDirection === "up" ? pct < 0 : pct > 0;
+  const formatValue = (v: number) =>
+    unit === "currency" ? formatCurrency(v) : unit === "hours" ? `${v} שע'` : String(v);
+
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span>{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-text-muted">{formatValue(current)}</span>
+        {pct !== 0 ? (
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-sm font-semibold",
+              improved ? "bg-success-bg text-success" : worsened ? "bg-warning-bg text-warning" : "",
+            )}
+          >
+            {pct > 0 ? "▲" : "▼"} {Math.abs(pct)}%
+          </span>
+        ) : (
+          <span className="text-sm text-text-muted">ללא שינוי</span>
+        )}
+      </div>
     </div>
   );
 }

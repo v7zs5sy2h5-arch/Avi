@@ -6,7 +6,7 @@ import { Card, CardTitle } from "@/components/ui/Card";
 import {
   getMonthlySummary,
   getIncomePerHourByCategory,
-  getWeeklyWorkedMinutes,
+  getWorkedMinutes,
   getFacialsWeekProgress,
   getFacialsWeekComparison,
   getFacialsTreatmentUsage,
@@ -47,7 +47,7 @@ export default async function DashboardPage({
   ] = await Promise.all([
     getMonthlySummary(supabase, monthStart, monthEnd),
     getIncomePerHourByCategory(supabase, monthStart, monthEnd),
-    getWeeklyWorkedMinutes(supabase, wStart, wEnd),
+    getWorkedMinutes(supabase, wStart, wEnd),
     getFacialsWeekProgress(supabase, wStart, wEnd),
     getFacialsWeekComparison(supabase, wStart, wEnd, lastWStart, wStart),
     getFacialsTreatmentUsage(supabase, wStart, wEnd),

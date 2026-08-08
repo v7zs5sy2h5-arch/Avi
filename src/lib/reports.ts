@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { NAILS_CATEGORY, FACIALS_CATEGORY } from "@/types/database";
+import { isoDate } from "@/lib/dates";
 
 type Cat = { category: string } | { category: string }[] | null;
 
@@ -139,7 +140,7 @@ export async function getIncomePerHourByTreatment(
     .sort((a, b) => b.perHour - a.perHour);
 }
 
-export async function getWeeklyWorkedMinutes(
+export async function getWorkedMinutes(
   supabase: SupabaseClient,
   start: Date,
   end: Date,
@@ -274,6 +275,63 @@ export async function getFacialsTreatmentUsage(
   }));
 }
 
+export interface DailyBreakdown {
+  date: string;
+  nailsCount: number;
+  facialsCount: number;
+  income: number;
+}
+
+export async function getDailyBreakdown(
+  supabase: SupabaseClient,
+  start: Date,
+  end: Date,
+): Promise<DailyBreakdown[]> {
+  const { data: logs } = await supabase
+    .from("treatment_log")
+    .select("amount, performed_at, treatment:treatments(category)")
+    .gte("performed_at", start.toISOString())
+    .lt("performed_at", end.toISOString());
+
+  const map = new Map<string, DailyBreakdown>();
+  for (const row of logs ?? []) {
+    const date = isoDate(new Date(row.performed_at as string));
+    const entry = map.get(date) ?? { date, nailsCount: 0, facialsCount: 0, income: 0 };
+    const category = firstCategory(row.treatment);
+    if (category === NAILS_CATEGORY) entry.nailsCount += 1;
+    else if (category === FACIALS_CATEGORY) entry.facialsCount += 1;
+    entry.income += Number(row.amount);
+    map.set(date, entry);
+  }
+
+  return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export interface PeriodStats {
+  nailsCount: number;
+  facialsCount: number;
+  income: number;
+  hours: number;
+}
+
+export async function getPeriodStats(
+  supabase: SupabaseClient,
+  start: Date,
+  end: Date,
+): Promise<PeriodStats> {
+  const [{ nailsCount, facialsCount }, minutes, summary] = await Promise.all([
+    getCategoryCounts(supabase, start, end),
+    getWorkedMinutes(supabase, start, end),
+    getMonthlySummary(supabase, start, end),
+  ]);
+  return {
+    nailsCount,
+    facialsCount,
+    income: summary.totalIncome,
+    hours: Math.round((minutes / 60) * 10) / 10,
+  };
+}
+
 export interface WeeklyHoursPoint {
   label: string;
   hours: number;
@@ -288,7 +346,7 @@ export async function getWeeklyHoursTrend(
   for (const start of weekStarts) {
     const end = new Date(start);
     end.setDate(end.getDate() + 7);
-    const minutes = await getWeeklyWorkedMinutes(supabase, start, end);
+    const minutes = await getWorkedMinutes(supabase, start, end);
     points.push({
       label: start.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }),
       hours: Math.round((minutes / 60) * 10) / 10,
