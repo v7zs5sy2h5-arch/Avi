@@ -9,6 +9,7 @@ import Entry from './pages/Entry.jsx';
 import Reports from './pages/Reports.jsx';
 import Milestones from './pages/Milestones.jsx';
 import Settings from './pages/Settings.jsx';
+import IncomeJournal from './pages/IncomeJournal.jsx';
 import { useData } from './context/DataContext.jsx';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/debts" element={<Debts />} />
           <Route path="/entry" element={<Entry />} />
+          <Route path="/income-journal" element={<IncomeJournal />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/milestones" element={<Milestones />} />
           <Route path="/settings" element={<Settings />} />

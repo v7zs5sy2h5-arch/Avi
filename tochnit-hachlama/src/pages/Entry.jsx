@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useData } from '../context/DataContext.jsx';
 import SwipeRow from '../components/SwipeRow.jsx';
 import Toast from '../components/Toast.jsx';
+import DailyIncomeForm from '../components/DailyIncomeForm.jsx';
 import { money, todayISO, humanDateShort } from '../lib/format.js';
 import { expenseCountedAmount } from '../lib/projections.js';
 import './Entry.css';
@@ -152,7 +154,7 @@ function IncomeForm({ onSaved }) {
   }
 
   return (
-    <form className="stack" onSubmit={submit}>
+    <div className="stack">
       <div className="category-grid">
         {INCOME_SOURCES.map((s) => (
           <button
@@ -167,22 +169,31 @@ function IncomeForm({ onSaved }) {
         ))}
       </div>
 
-      <label className="field-label" htmlFor="income-amount">סכום</label>
-      <input
-        id="income-amount"
-        className="amount-input"
-        type="number"
-        inputMode="decimal"
-        placeholder="0"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
-      />
+      {source === 'business' ? (
+        <>
+          <DailyIncomeForm date={date} onDateChange={setDate} onSaved={onSaved} />
+          <Link to="/income-journal" className="btn btn-secondary btn-block">📅 צפייה ביומן ההכנסות המלא</Link>
+        </>
+      ) : (
+        <form className="stack" onSubmit={submit}>
+          <label className="field-label" htmlFor="income-amount">סכום</label>
+          <input
+            id="income-amount"
+            className="amount-input"
+            type="number"
+            inputMode="decimal"
+            placeholder="0"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+          />
 
-      <input type="date" className="date-input" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
-      <input className="note-input" placeholder="הערה (רשות)" value={note} onChange={(e) => setNote(e.target.value)} />
+          <input type="date" className="date-input" value={date} onChange={(e) => setDate(e.target.value)} max={todayISO()} />
+          <input className="note-input" placeholder="הערה (רשות)" value={note} onChange={(e) => setNote(e.target.value)} />
 
-      <button type="submit" className="btn btn-primary btn-lg btn-block">💰 שמירת הכנסה</button>
-    </form>
+          <button type="submit" className="btn btn-primary btn-lg btn-block">💰 שמירת הכנסה</button>
+        </form>
+      )}
+    </div>
   );
 }
 

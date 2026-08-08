@@ -174,6 +174,10 @@ export default function Settings() {
           <span>יעד חיסכון חודשי (שכבה 4)</span>
           <input type="number" defaultValue={state.settings.savingsMonthlyTarget} onBlur={(e) => updateSettings({ savingsMonthlyTarget: Number(e.target.value) || 0 })} />
         </label>
+        <label className="settings-field">
+          <span>יעד הכנסה חודשי מהעסק</span>
+          <input type="number" defaultValue={state.settings.businessMonthlyTarget} onBlur={(e) => updateSettings({ businessMonthlyTarget: Number(e.target.value) || 0 })} />
+        </label>
       </Section>
 
       <Section title="ייצוא נתונים" emoji="📤">

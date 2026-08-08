@@ -17,6 +17,7 @@ function firstActivityDate(state) {
   const dates = [
     ...state.expenses.map((e) => e.date),
     ...state.incomeEntries.map((e) => e.date),
+    ...state.dailyIncome.map((e) => e.date),
     ...state.debtPayments.map((e) => e.date),
     ...state.savingsEntries.map((e) => e.date),
   ];

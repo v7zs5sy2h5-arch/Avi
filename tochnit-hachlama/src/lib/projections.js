@@ -1,5 +1,6 @@
 import { monthlyStep } from './amortization.js';
 import { addMonthsISO, monthKey, monthsBetween, todayISO } from './format.js';
+import { monthDailyIncomeTotal } from './dailyIncome.js';
 
 const MAX_MONTHS = 72;
 
@@ -22,9 +23,10 @@ export function layer1Total(state) {
 }
 
 export function monthIncome(state, mKey) {
-  return state.incomeEntries
+  const fromEntries = state.incomeEntries
     .filter((e) => monthKey(e.date) === mKey)
     .reduce((sum, e) => sum + e.amount, 0);
+  return fromEntries + monthDailyIncomeTotal(state, mKey);
 }
 
 export function expenseCountedAmount(e) {

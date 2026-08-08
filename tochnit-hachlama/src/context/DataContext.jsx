@@ -51,6 +51,21 @@ export function DataProvider({ children }) {
       },
       deleteIncome: (id) => mutate((s) => { s.incomeEntries = s.incomeEntries.filter((e) => e.id !== id); }),
 
+      upsertDailyIncome: ({ date, cash, bit, credit, transfer }) => {
+        mutate((s) => {
+          const values = {
+            cash: Number(cash) || 0,
+            bit: Number(bit) || 0,
+            credit: Number(credit) || 0,
+            transfer: Number(transfer) || 0,
+          };
+          const idx = s.dailyIncome.findIndex((e) => e.date === date);
+          if (idx >= 0) s.dailyIncome[idx] = { ...s.dailyIncome[idx], ...values };
+          else s.dailyIncome.push({ id: newId(), date, ...values });
+        });
+      },
+      deleteDailyIncome: (date) => mutate((s) => { s.dailyIncome = s.dailyIncome.filter((e) => e.date !== date); }),
+
       addExpense: ({ date, categoryType, categoryId, amount, note, isImpulsive, isShared }) => {
         mutate((s) => {
           s.expenses.push({

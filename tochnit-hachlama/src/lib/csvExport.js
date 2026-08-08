@@ -1,3 +1,5 @@
+import { dailyTotal } from './dailyIncome.js';
+
 function toCsvRows(rows) {
   return rows.map((row) => row.map((cell) => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\r\n');
 }
@@ -35,6 +37,11 @@ export function exportAllToCsv(state) {
     ...state.incomeEntries.map((i) => [i.date, i.source, i.amount, i.note || '']),
   ]);
 
+  const dailyIncomeCsv = toCsvRows([
+    ['תאריך', 'מזומן', 'ביט', 'אשראי', 'העברה בנקאית', 'סה"כ'],
+    ...state.dailyIncome.map((e) => [e.date, e.cash, e.bit, e.credit, e.transfer, dailyTotal(e)]),
+  ]);
+
   const paymentsCsv = toCsvRows([
     ['תאריך', 'חוב', 'סכום ששולם'],
     ...state.debtPayments.map((p) => [p.date, state.debts.find((d) => d.id === p.debtId)?.name || p.debtId, p.amount]),
@@ -48,6 +55,7 @@ export function exportAllToCsv(state) {
   const combined = [
     'הוצאות', expensesCsv, '',
     'הכנסות', incomeCsv, '',
+    'יומן הכנסות יומי (עסק)', dailyIncomeCsv, '',
     'תשלומי חוב', paymentsCsv, '',
     'חובות', debtsCsv,
   ].join('\r\n');

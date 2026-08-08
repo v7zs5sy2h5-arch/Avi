@@ -202,6 +202,7 @@ a { color: inherit; }
 .row { display: flex; align-items: center; gap: 10px; }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-2 > * { min-width: 0; }
 
 .muted { color: var(--text-muted); }
 .num { font-variant-numeric: tabular-nums; }

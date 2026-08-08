@@ -3,6 +3,7 @@ import { useData } from '../context/DataContext.jsx';
 import CoachCard from '../components/CoachCard.jsx';
 import HealthGauge from '../components/HealthGauge.jsx';
 import EnvelopeBar from '../components/EnvelopeBar.jsx';
+import BusinessPaceCard from '../components/BusinessPaceCard.jsx';
 import {
   layer2Status,
   healthScore,
@@ -90,6 +91,8 @@ export default function Dashboard() {
           <p className="pace-gap-note muted">עוד לא הזנת הכנסה לחודש הזה - הזיני כדי לראות את הפער בזמן אמת.</p>
         )}
       </div>
+
+      <BusinessPaceCard />
 
       <div className="section-title">🛣️ המרחק לחופש מחוב</div>
       <Link to="/debts" className="card freedom-card">
