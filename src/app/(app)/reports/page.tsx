@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, ChevronLeft } from "lucide-react";
+import { ChevronRight, ChevronLeft, ChevronsRight, ChevronsLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/layout/Header";
 import { Card, CardTitle } from "@/components/ui/Card";
@@ -8,16 +8,13 @@ import {
   getMonthlySummary,
   getIncomePerHourByTreatment,
   getNailsFacialsTrend,
-  getWeeklyHoursTrend,
   getDailyBreakdown,
   getPeriodStats,
   getPaymentMethodBreakdown,
 } from "@/lib/reports";
 import { PAYMENT_METHOD_LABELS } from "@/types/database";
 import { getTransactions } from "@/lib/transactions";
-import { weekStart } from "@/lib/dates";
 import { NailsFacialsChart } from "@/components/charts/NailsFacialsChart";
-import { WeeklyHoursChart } from "@/components/charts/WeeklyHoursChart";
 import { MonthCalendarGrid } from "@/components/reports/MonthCalendarGrid";
 import type { WeeklyGoal } from "@/types/database";
 
@@ -51,20 +48,15 @@ export default async function ReportsPage({
     return d;
   });
 
-  const weekStarts8 = Array.from({ length: 8 }, (_, i) => {
-    const d = weekStart(new Date());
-    d.setDate(d.getDate() - 7 * (7 - i));
-    return d;
-  });
-
   const prevMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() - 1, 1);
   const nextMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 1);
+  const prevYear = new Date(monthStart.getFullYear() - 1, monthStart.getMonth(), 1);
+  const nextYear = new Date(monthStart.getFullYear() + 1, monthStart.getMonth(), 1);
 
   const [
     summary,
     treatmentStats,
     nailsFacialsTrend,
-    weeklyHoursTrend,
     dailyBreakdown,
     currentPeriod,
     previousPeriod,
@@ -75,7 +67,6 @@ export default async function ReportsPage({
     getMonthlySummary(supabase, monthStart, monthEnd),
     getIncomePerHourByTreatment(supabase, monthStart, monthEnd),
     getNailsFacialsTrend(supabase, monthStarts12),
-    getWeeklyHoursTrend(supabase, weekStarts8),
     getDailyBreakdown(supabase, monthStart, monthEnd),
     getPeriodStats(supabase, monthStart, monthEnd),
     getPeriodStats(supabase, prevMonth, monthStart),
@@ -99,14 +90,36 @@ export default async function ReportsPage({
       <Header title="דוחות 📊" />
 
       <div className="flex items-center justify-between pt-3">
-        <Link href={`/reports?month=${monthParam(prevMonth)}`} className="p-2 text-text-muted">
+        <Link
+          href={`/reports?month=${monthParam(prevYear)}`}
+          className="p-2 text-text-muted"
+          aria-label="שנה קודמת"
+        >
+          <ChevronsRight size={18} />
+        </Link>
+        <Link
+          href={`/reports?month=${monthParam(prevMonth)}`}
+          className="p-2 text-text-muted"
+          aria-label="חודש קודם"
+        >
           <ChevronRight size={20} />
         </Link>
         <p className="font-heading text-lg">
           {monthStart.toLocaleDateString("he-IL", { month: "long", year: "numeric" })}
         </p>
-        <Link href={`/reports?month=${monthParam(nextMonth)}`} className="p-2 text-text-muted">
+        <Link
+          href={`/reports?month=${monthParam(nextMonth)}`}
+          className="p-2 text-text-muted"
+          aria-label="חודש הבא"
+        >
           <ChevronLeft size={20} />
+        </Link>
+        <Link
+          href={`/reports?month=${monthParam(nextYear)}`}
+          className="p-2 text-text-muted"
+          aria-label="שנה הבאה"
+        >
+          <ChevronsLeft size={18} />
         </Link>
       </div>
 
@@ -144,6 +157,13 @@ export default async function ReportsPage({
       </Card>
 
       <Card className="mt-3">
+        <CardTitle>
+          📅 פירוט יומי — ציפורניים מול טיפולי פנים ({monthStart.toLocaleDateString("he-IL", { month: "long" })})
+        </CardTitle>
+        <MonthCalendarGrid monthStart={monthStart} breakdown={dailyBreakdown} />
+      </Card>
+
+      <Card className="mt-3">
         <CardTitle>📈 התקדמות מהחודש הקודם</CardTitle>
         <div className="space-y-2.5">
           <ProgressRow
@@ -167,18 +187,11 @@ export default async function ReportsPage({
             unit="currency"
             goodDirection="up"
           />
-          <ProgressRow
-            label="⏱️ שעות עבודה"
-            current={currentPeriod.hours}
-            previous={previousPeriod.hours}
-            unit="hours"
-            goodDirection="down"
-          />
         </div>
       </Card>
 
       <Card className="mt-3">
-        <CardTitle>📊 הכנסה לשעת עבודה לפי טיפול</CardTitle>
+        <CardTitle>📊 פילוח לפי סוג טיפול (החודש)</CardTitle>
         {treatmentStats.length === 0 ? (
           <p className="text-sm text-text-muted">אין נתונים החודש</p>
         ) : (
@@ -187,7 +200,7 @@ export default async function ReportsPage({
               <div key={t.name} className="flex items-center justify-between text-sm">
                 <span className="truncate">{t.name}</span>
                 <span className="text-text-muted">
-                  {t.count}× · {formatCurrency(t.perHour)}/שעה
+                  {t.count}× · {formatCurrency(t.amount)}
                 </span>
               </div>
             ))}
@@ -196,18 +209,8 @@ export default async function ReportsPage({
       </Card>
 
       <Card className="mt-3">
-        <CardTitle>📅 פירוט יומי — {monthStart.toLocaleDateString("he-IL", { month: "long" })}</CardTitle>
-        <MonthCalendarGrid monthStart={monthStart} breakdown={dailyBreakdown} />
-      </Card>
-
-      <Card className="mt-3">
         <CardTitle>💅✨ ציפורניים מול טיפולי פנים — מגמה שנתית</CardTitle>
         <NailsFacialsChart data={nailsFacialsTrend} />
-      </Card>
-
-      <Card className="mt-3">
-        <CardTitle>⏱️ שעות עבודה שבועיות — מגמה</CardTitle>
-        <WeeklyHoursChart data={weeklyHoursTrend} />
       </Card>
 
       <Card className="mt-3">
@@ -321,7 +324,7 @@ function ProgressRow({
   label: string;
   current: number;
   previous: number;
-  unit: "" | "currency" | "hours";
+  unit: "" | "currency";
   goodDirection: "up" | "down";
 }) {
   const pct =
@@ -332,8 +335,7 @@ function ProgressRow({
       : Math.round(((current - previous) / previous) * 100);
   const improved = goodDirection === "up" ? pct > 0 : pct < 0;
   const worsened = goodDirection === "up" ? pct < 0 : pct > 0;
-  const formatValue = (v: number) =>
-    unit === "currency" ? formatCurrency(v) : unit === "hours" ? `${v} שע'` : String(v);
+  const formatValue = (v: number) => (unit === "currency" ? formatCurrency(v) : String(v));
 
   return (
     <div className="flex items-center justify-between text-sm">

@@ -1,20 +1,10 @@
 import { addDays } from "date-fns";
 import { weekStart, isoDate } from "@/lib/dates";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
+import { hebrewDateLabel, hebrewHoliday } from "@/lib/hebrewCalendar";
 import type { DailyBreakdown } from "@/lib/reports";
 
 const WEEKDAY_LABELS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
-
-function hebrewDateLabel(date: Date): string {
-  try {
-    return new Intl.DateTimeFormat("he-u-ca-hebrew", {
-      day: "numeric",
-      month: "short",
-    }).format(date);
-  } catch {
-    return "";
-  }
-}
 
 export function MonthCalendarGrid({
   monthStart,
@@ -51,23 +41,34 @@ export function MonthCalendarGrid({
               const isToday = key === todayKey;
               const inMonth = day.getMonth() === currentMonth;
               const d = byDate.get(key);
+              const holiday = hebrewHoliday(day);
               return (
                 <div
                   key={key}
-                  className="min-h-[76px] rounded-lg border border-border-soft/60 p-1"
+                  className={cn(
+                    "min-h-[88px] rounded-lg border p-1",
+                    holiday ? "border-gold/40 bg-gold-bg/50" : "border-border-soft/60",
+                  )}
                 >
-                  <span
-                    className={cn(
-                      "flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-semibold",
-                      isToday
-                        ? "gradient-primary text-accent-foreground"
-                        : !inMonth
-                          ? "text-text-muted/40"
-                          : "text-text",
-                    )}
-                  >
-                    {day.getDate()}
-                  </span>
+                  <div className="flex items-center justify-between gap-0.5">
+                    <span
+                      className={cn(
+                        "flex h-6 w-6 items-center justify-center rounded-full text-[13px] font-semibold",
+                        isToday
+                          ? "gradient-primary text-accent-foreground"
+                          : !inMonth
+                            ? "text-text-muted/40"
+                            : "text-text",
+                      )}
+                    >
+                      {day.getDate()}
+                    </span>
+                    {holiday ? (
+                      <span className="text-[11px]" aria-hidden>
+                        {holiday}
+                      </span>
+                    ) : null}
+                  </div>
                   <p
                     className={cn(
                       "truncate text-[9px] leading-none",
@@ -86,6 +87,11 @@ export function MonthCalendarGrid({
                       {d.facialsCount > 0 ? (
                         <div className="truncate rounded bg-facials px-1 py-[1px] text-[9px] font-medium text-white">
                           ✨ {d.facialsCount}
+                        </div>
+                      ) : null}
+                      {d.income > 0 ? (
+                        <div className="truncate text-[9px] font-bold text-accent-strong">
+                          {formatCurrency(d.income)}
                         </div>
                       ) : null}
                     </div>

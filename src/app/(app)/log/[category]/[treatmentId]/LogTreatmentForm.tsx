@@ -13,13 +13,10 @@ import type { PaymentMethod, Treatment } from "@/types/database";
 const initialState: LogState = {};
 const PAYMENT_METHODS: PaymentMethod[] = ["cash", "card", "bit", "transfer"];
 
-function nowParts() {
+function todayIso() {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  return {
-    date: `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`,
-    time: `${pad(now.getHours())}:${pad(now.getMinutes())}`,
-  };
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 export function LogTreatmentForm({
@@ -33,15 +30,8 @@ export function LogTreatmentForm({
   const [state, formAction, pending] = useActionState(action, initialState);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
   const [showProduct, setShowProduct] = useState(false);
-  const initial = nowParts();
-  const [date, setDate] = useState(initial.date);
-  const [time, setTime] = useState(initial.time);
-
-  function setNow() {
-    const n = nowParts();
-    setDate(n.date);
-    setTime(n.time);
-  }
+  const today = todayIso();
+  const [date, setDate] = useState(today);
 
   return (
     <form action={formAction} className="space-y-6 px-4 pb-6 pt-5">
@@ -82,29 +72,21 @@ export function LogTreatmentForm({
           <Label>מתי בוצע הטיפול?</Label>
           <button
             type="button"
-            onClick={setNow}
+            onClick={() => setDate(today)}
             className="text-sm font-semibold text-accent-strong underline underline-offset-2"
           >
-            עכשיו
+            היום
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="date"
-            name="date"
-            value={date}
-            max={initial.date}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-          <Input
-            type="time"
-            name="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            required
-          />
-        </div>
+        <Input
+          type="date"
+          name="date"
+          value={date}
+          max={today}
+          onChange={(e) => setDate(e.target.value)}
+          required
+          className="h-14 text-lg font-bold"
+        />
       </div>
 
       <div>

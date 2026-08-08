@@ -46,16 +46,3 @@ const weekdayFormatter = new Intl.DateTimeFormat("he-IL", { weekday: "long" });
 export function formatWeekday(date: string | Date) {
   return weekdayFormatter.format(new Date(date));
 }
-
-export function formatDurationHours(minutes: number) {
-  const hours = minutes / 60;
-  return `${hours.toFixed(1)} שעות`;
-}
-
-export function minutesToHm(minutes: number) {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m} דק'`;
-  if (m === 0) return `${h} שע'`;
-  return `${h} שע' ${m} דק'`;
-}

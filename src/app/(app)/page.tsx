@@ -5,8 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardTitle } from "@/components/ui/Card";
 import {
   getMonthlySummary,
-  getIncomePerHourByCategory,
-  getWorkedMinutes,
   getFacialsWeekProgress,
   getFacialsWeekComparison,
   getFacialsTreatmentUsage,
@@ -14,7 +12,7 @@ import {
   getPaymentMethodBreakdown,
 } from "@/lib/reports";
 import { weekStart, isoDate } from "@/lib/dates";
-import { cn, formatCurrency, minutesToHm } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { getCategoryStyle, getTreatmentEmoji } from "@/lib/categoryStyle";
 import { FACIALS_CATEGORY, NAILS_CATEGORY, PAYMENT_METHOD_LABELS } from "@/types/database";
 import type { WeeklyGoal } from "@/types/database";
@@ -37,8 +35,6 @@ export default async function DashboardPage({
 
   const [
     summary,
-    perHour,
-    weeklyMinutes,
     facialsProgress,
     facialsComparison,
     facialsUsage,
@@ -48,8 +44,6 @@ export default async function DashboardPage({
     { data: goal },
   ] = await Promise.all([
     getMonthlySummary(supabase, monthStart, monthEnd),
-    getIncomePerHourByCategory(supabase, monthStart, monthEnd),
-    getWorkedMinutes(supabase, wStart, wEnd),
     getFacialsWeekProgress(supabase, wStart, wEnd),
     getFacialsWeekComparison(supabase, wStart, wEnd, lastWStart, wStart),
     getFacialsTreatmentUsage(supabase, wStart, wEnd),
@@ -64,10 +58,6 @@ export default async function DashboardPage({
   ]);
 
   const todayTotal = todayPayments.reduce((s, p) => s + p.amount, 0);
-
-  const nailsStat = perHour.find((s) => s.category === NAILS_CATEGORY);
-  const facialsStat = perHour.find((s) => s.category === FACIALS_CATEGORY);
-  const maxPerHour = Math.max(nailsStat?.perHour ?? 0, facialsStat?.perHour ?? 0, 1);
 
   const effectiveTargetCount = Math.max(
     goal?.target_count ?? 0,
@@ -162,6 +152,10 @@ export default async function DashboardPage({
                 ))}
             </div>
           )}
+          <p className="mt-3 text-sm text-text-muted">
+            {todayCounts.nailsCount + todayCounts.facialsCount} טיפולים תועדו היום (
+            {todayCounts.nailsCount} ציפורניים, {todayCounts.facialsCount} טיפולי פנים)
+          </p>
         </Card>
       </section>
 
@@ -249,27 +243,7 @@ export default async function DashboardPage({
         </Card>
       </section>
 
-      <section className="mt-3">
-        <Card>
-          <CardTitle>📊 הכנסה לשעת עבודה (החודש)</CardTitle>
-          <div className="space-y-3">
-            <HourBar
-              label="ציפורניים"
-              value={nailsStat?.perHour ?? 0}
-              max={maxPerHour}
-              colorClass="bg-nails"
-            />
-            <HourBar
-              label="טיפולי פנים"
-              value={facialsStat?.perHour ?? 0}
-              max={maxPerHour}
-              colorClass="bg-facials"
-            />
-          </div>
-        </Card>
-      </section>
-
-      <section className="mt-3">
+      <section className="mt-3 mb-6">
         <Card>
           <CardTitle>💰 הכנסות והוצאות החודש</CardTitle>
           <div className="flex items-baseline justify-between">
@@ -294,44 +268,6 @@ export default async function DashboardPage({
           </div>
         </Card>
       </section>
-
-      <section className="mt-3 mb-6">
-        <Card>
-          <CardTitle>⏱️ שעות עבודה השבוע</CardTitle>
-          <p className="text-2xl font-bold">{minutesToHm(weeklyMinutes)}</p>
-          <p className="text-sm text-text-muted mt-1">
-            {todayCounts.nailsCount + todayCounts.facialsCount} טיפולים תועדו היום (
-            {todayCounts.nailsCount} ציפורניים, {todayCounts.facialsCount} טיפולי פנים)
-          </p>
-        </Card>
-      </section>
-    </div>
-  );
-}
-
-function HourBar({
-  label,
-  value,
-  max,
-  colorClass,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  colorClass: string;
-}) {
-  return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span>{label}</span>
-        <span className="font-medium">{formatCurrency(value)} / שעה</span>
-      </div>
-      <div className="h-2.5 rounded-full bg-border-soft overflow-hidden">
-        <div
-          className={`h-full ${colorClass}`}
-          style={{ width: `${Math.min((value / max) * 100, 100)}%` }}
-        />
-      </div>
     </div>
   );
 }

@@ -39,11 +39,14 @@ export async function logTreatment(
   const productName = String(formData.get("product_name") ?? "").trim();
   const productAmountRaw = String(formData.get("product_amount") ?? "").trim();
   const dateStr = String(formData.get("date") ?? "");
-  const timeStr = String(formData.get("time") ?? "");
 
   if (!amount || amount <= 0) return { error: "יש להזין סכום תקין" };
 
-  const performedAtDate = dateStr && timeStr ? new Date(`${dateStr}T${timeStr}:00`) : new Date();
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const performedAtDate = dateStr
+    ? new Date(`${dateStr}T${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`)
+    : now;
   if (performedAtDate.getTime() > Date.now() + 60000) {
     return { error: "לא ניתן לתעד טיפול לתאריך או שעה שעדיין לא הגיעו" };
   }

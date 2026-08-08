@@ -179,20 +179,6 @@ export async function getIncomePerHourByTreatment(
     .sort((a, b) => b.perHour - a.perHour);
 }
 
-export async function getWorkedMinutes(
-  supabase: SupabaseClient,
-  start: Date,
-  end: Date,
-): Promise<number> {
-  const { data } = await supabase
-    .from("treatment_log")
-    .select("duration_minutes")
-    .gte("performed_at", start.toISOString())
-    .lt("performed_at", end.toISOString());
-
-  return (data ?? []).reduce((s, r) => s + Number(r.duration_minutes), 0);
-}
-
 export interface CategoryCounts {
   nailsCount: number;
   facialsCount: number;
@@ -350,7 +336,6 @@ export interface PeriodStats {
   nailsCount: number;
   facialsCount: number;
   income: number;
-  hours: number;
 }
 
 export async function getPeriodStats(
@@ -358,41 +343,15 @@ export async function getPeriodStats(
   start: Date,
   end: Date,
 ): Promise<PeriodStats> {
-  const [{ nailsCount, facialsCount }, minutes, summary] = await Promise.all([
+  const [{ nailsCount, facialsCount }, summary] = await Promise.all([
     getCategoryCounts(supabase, start, end),
-    getWorkedMinutes(supabase, start, end),
     getMonthlySummary(supabase, start, end),
   ]);
   return {
     nailsCount,
     facialsCount,
     income: summary.totalIncome,
-    hours: Math.round((minutes / 60) * 10) / 10,
   };
-}
-
-export interface WeeklyHoursPoint {
-  label: string;
-  hours: number;
-  weekStart: string;
-}
-
-export async function getWeeklyHoursTrend(
-  supabase: SupabaseClient,
-  weekStarts: Date[],
-): Promise<WeeklyHoursPoint[]> {
-  const points: WeeklyHoursPoint[] = [];
-  for (const start of weekStarts) {
-    const end = new Date(start);
-    end.setDate(end.getDate() + 7);
-    const minutes = await getWorkedMinutes(supabase, start, end);
-    points.push({
-      label: start.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit" }),
-      hours: Math.round((minutes / 60) * 10) / 10,
-      weekStart: start.toISOString().slice(0, 10),
-    });
-  }
-  return points;
 }
 
 export interface NailsFacialsTrendPoint {
